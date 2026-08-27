@@ -327,6 +327,19 @@ export class Game {
     if (isNeverPlayable(card.type)) {
       throw new GameError('That card can never be played from your hand.');
     }
+
+    // An Angel goes down at exactly one moment: a Hitman has just been drawn on
+    // you. Putting it on the table gives the rest of the table a beat to Burn it.
+    if (card.type === 'ANGEL') {
+      if (!(s.pending && s.pending.kind === 'angel' && s.pending.playerId === playerId)) {
+        throw new GameError('An Angel only goes down when a Hitman has your name on it.');
+      }
+      this.clearPending();
+      this.moveToStack(p, card, args);
+      this.log({ t: 'angel_played', playerId });
+      this.openQuickWindow();
+      return;
+    }
     if (this.isLocked(card.type)) throw new GameError('That card type is locked right now.');
 
     if (card.type === 'LOCK') {
@@ -398,6 +411,11 @@ export class Game {
     const top = this.state.stack[this.state.stack.length - 1];
     if (!top) return false;
     if (type === 'REDIRECT') return top.card.type === 'ATTACK';
+    if (top.card.type === 'ANGEL') {
+      // An Angel cannot be cancelled. Burn is the only answer to one - and it
+      // takes every Angel at the table with it. Mirroring a save means nothing.
+      return type === 'BURN';
+    }
     return true;
   }
 
@@ -466,7 +484,7 @@ export class Game {
 
       switch (e.card.type) {
         case 'CANCEL':
-          if (below) {
+          if (below && below.card.type !== 'ANGEL') {
             below.cancelled = true;
             this.log({
               t: 'card_cancelled',
@@ -531,6 +549,17 @@ export class Game {
     }
 
     for (const e of entries) s.discard.push(e.card);
+
+    const angel = entries.find((e) => e.card.type === 'ANGEL');
+    if (angel) {
+      if (angel.cancelled) {
+        this.log({ t: 'angel_burned', playerId: angel.playerId });
+        this.killByHitman(angel.playerId);
+      } else {
+        this.offerHitmanPlacement(angel.playerId);
+      }
+      return;
+    }
 
     this.runPromptQueue();
     this.afterEffects();
@@ -711,29 +740,47 @@ export class Game {
     this.log({ t: 'hitman_drawn', playerId });
     this.cancelAllAttacks();
 
-    const angelIndex = p.hand.findIndex((c) => c.type === 'ANGEL');
-    if (angelIndex >= 0) {
-      const removed = p.hand.splice(angelIndex, 1);
-      s.discard.push(removed[0]);
-      s.pendingHitman = hitman;
+    s.pendingHitman = hitman;
+
+    if (p.hand.some((c) => c.type === 'ANGEL') && !this.isLocked('ANGEL')) {
+      // They hold an answer. Putting it down is a play, which the rest of the
+      // table gets a beat to Burn.
       this.setPending({
-        kind: 'hitmanPlacement',
+        kind: 'angel',
         playerId,
         deadline: s.now + s.balance.choiceSeconds * 1000,
       });
       return;
     }
 
+    this.killByHitman(playerId);
+  }
+
+  /** The Hitman lands: no Angel, or the Angel was burned off the table. */
+  private killByHitman(playerId: string): void {
+    const s = this.state;
+    const p = this.player(playerId);
     p.alive = false;
     for (const c of p.hand) s.discard.push(c);
     p.hand = [];
-    s.discard.push(hitman); // this Hitman has done its job and leaves the game
+    if (s.pendingHitman) s.discard.push(s.pendingHitman); // done its job, leaves the game
+    s.pendingHitman = null;
     this.log({ t: 'eliminated', playerId });
 
     if (this.checkWin()) return;
     s.currentTurnsRemaining = 1;
     s.currentExtraFromAttacks = 0;
     this.endSegment();
+  }
+
+  /** The Angel held. Now they say where the Hitman goes back. */
+  private offerHitmanPlacement(playerId: string): void {
+    const s = this.state;
+    this.setPending({
+      kind: 'hitmanPlacement',
+      playerId,
+      deadline: s.now + s.balance.choiceSeconds * 1000,
+    });
   }
 
   // ---------------------------------------------------------- making choices
@@ -830,6 +877,19 @@ export class Game {
 
     if (pending.kind === 'quickWindow') {
       this.closeQuickWindow();
+      return;
+    }
+    if (pending.kind === 'angel') {
+      // Nobody would ever choose to die, so a slow connection never costs a life.
+      const angel = this.player(pending.playerId).hand.find((c) => c.type === 'ANGEL');
+      this.log({ t: 'timed_out', playerId: pending.playerId });
+      try {
+        if (!angel) throw new GameError('no angel');
+        this.play(pending.playerId, angel.id);
+      } catch {
+        this.clearPending();
+        this.killByHitman(pending.playerId);
+      }
       return;
     }
     if (pending.kind === 'hitmanPlacement') {

@@ -38,3 +38,23 @@ export function playAndResolve(
 export function filler(n: number, type: CardType = 'PEEK'): CardType[] {
   return Array.from({ length: n }, () => type);
 }
+
+/**
+ * A Hitman has just been drawn on this player and they hold an Angel. Put it
+ * down and let the reflex window close with nobody answering it.
+ */
+export function playAngel(g: Game, playerId: string): void {
+  g.play(playerId, cardOf(g, playerId, 'ANGEL').id);
+  passAll(g);
+}
+
+/** Draw into a Hitman, answer it with an Angel, and bury it where asked. */
+export function surviveHitman(
+  g: Game,
+  playerId: string,
+  where: 'top' | 'middle' | 'bottom',
+): void {
+  g.draw(playerId);
+  playAngel(g, playerId);
+  g.choose(playerId, where);
+}

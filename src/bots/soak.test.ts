@@ -31,6 +31,8 @@ function playFullMatch(playerCount: number, seed: number) {
       const next = pending.eligible.find((id) => !pending.responded.includes(id));
       if (next) byId.get(next)!.respondToQuickWindow(game);
       else game.checkTimers();
+    } else if (pending && pending.kind === 'angel') {
+      byId.get(pending.playerId)!.playAngel(game);
     } else if (pending && pending.kind === 'steal') {
       byId.get(pending.playerId)!.chooseCardToGive(game);
     } else if (pending && pending.kind === 'hitmanPlacement') {

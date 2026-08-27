@@ -11,7 +11,7 @@ export interface CardInfo {
 
 export const CARD_INFO: Record<CardType, CardInfo> = {
   HITMAN: { name: 'Hitman', blurb: 'Draw it and you are gone.', passive: true },
-  ANGEL: { name: 'Angel', blurb: 'Saves you from one Hitman. Automatic.', passive: true },
+  ANGEL: { name: 'Angel', blurb: 'Play it when a Hitman lands on you.' },
   ATTACK: { name: 'Attack', blurb: 'Target takes 2 turns in a row.', needsTarget: true },
   FULL_ATTACK: { name: 'Full Attack', blurb: 'Everyone else takes 2 turns.' },
   SKIP: { name: 'Skip', blurb: 'End your turn now. No draw.' },

@@ -20,7 +20,11 @@ export type CardType =
   | 'REDIRECT';
 
 export const QUICK_CARDS = ['CANCEL', 'BURN', 'MIRROR', 'REDIRECT'] as const;
-export const NEVER_PLAYABLE = ['HITMAN', 'ANGEL'] as const;
+/**
+ * Hitman is the only card that can never leave a hand by being played. Angel is
+ * played, but only at one moment: when a Hitman has just been drawn on you.
+ */
+export const NEVER_PLAYABLE = ['HITMAN'] as const;
 
 export function isQuick(t: CardType): boolean {
   return (QUICK_CARDS as readonly string[]).includes(t);
@@ -92,6 +96,12 @@ export type Pending =
       deadline: number;
     }
   | {
+      /** A Hitman has been drawn on them and they hold an Angel to answer it. */
+      kind: 'angel';
+      playerId: string;
+      deadline: number;
+    }
+  | {
       kind: 'hitmanPlacement';
       /** The player the Angel just saved. */
       playerId: string;
@@ -122,6 +132,8 @@ export type LogEntry =
     }
   | { t: 'drew'; playerId: string; fromBottom: boolean }
   | { t: 'hitman_drawn'; playerId: string }
+  | { t: 'angel_played'; playerId: string }
+  | { t: 'angel_burned'; playerId: string }
   | { t: 'angel_saved'; playerId: string; placement: 'top' | 'middle' | 'bottom' }
   | { t: 'eliminated'; playerId: string }
   | { t: 'skipped'; playerId: string }

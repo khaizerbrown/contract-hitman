@@ -460,6 +460,10 @@ function describe(v: MatchView, e: LogEntry): { text: string; cls: string } {
       return { text: `${n(e.playerId)} draws${e.fromBottom ? ' from the bottom' : ''}`, cls: '' };
     case 'hitman_drawn':
       return { text: `${n(e.playerId)} DRAWS A HITMAN`, cls: 'hit' };
+    case 'angel_played':
+      return { text: `${n(e.playerId)} puts an Angel down`, cls: 'good' };
+    case 'angel_burned':
+      return { text: `${n(e.playerId)}'s Angel is burned off the table`, cls: 'hit' };
     case 'angel_saved':
       return {
         text: `An Angel takes the bullet for ${n(e.playerId)} &mdash; Hitman goes ${e.placement}`,
@@ -498,12 +502,17 @@ function canPlay(v: MatchView, type: CardType): boolean {
   if (info.passive) return false;
   if (v.locks.some((l) => l.type === type)) return false;
   const p = v.pending;
+  if (type === 'ANGEL') {
+    return p?.kind === 'angel' && (p as { playerId: string }).playerId === meId();
+  }
+  if (p && p.kind === 'angel') return false;
   if (p && p.kind === 'quickWindow') {
     const w = p as { eligible: string[]; responded: string[] };
     if (!info.quick) return false;
     if (!w.eligible.includes(meId()) || w.responded.includes(meId())) return false;
     const top = v.stack[v.stack.length - 1];
     if (type === 'REDIRECT') return top?.cardType === 'ATTACK';
+    if (top?.cardType === 'ANGEL') return type === 'BURN';
     return true;
   }
   if (p) return false;
@@ -574,6 +583,7 @@ function waitingText(v: MatchView): string {
   if (v.phase === 'ended') return 'MATCH OVER';
   if (!v.you?.alive) return 'SPECTATING';
   if (v.pending?.kind === 'quickWindow') return 'OTHERS ARE REACTING';
+  if (v.pending?.kind === 'angel') return 'AN ANGEL IS GOING DOWN';
   if (v.pending) return 'WAITING ON A CHOICE';
   return `${nameOf(v, v.currentPlayerId)} IS ACTING`;
 }
@@ -598,6 +608,18 @@ function renderOverlay(v: MatchView): void {
   }
 
   // The reflex window is handled in place by renderReactStrip, not here.
+
+  if (p && p.kind === 'angel' && (p as { playerId: string }).playerId === meId()) {
+    const angels = (v.you?.hand ?? []).filter((c) => c.type === 'ANGEL');
+    ov.className = 'overlay';
+    ov.innerHTML = `<div class="panel">
+      <h2>A HITMAN HAS YOUR NAME ON IT</h2>
+      <p>Put an Angel down to answer it. Nobody can cancel an Angel &mdash; but a
+      Burn will take it, and every other Angel at the table, with it.</p>
+      <div class="miniHand">${angels.map((c) => cardHtml(v, c, true)).join('')}</div>
+    </div>`;
+    return;
+  }
 
   if (p && p.kind === 'steal' && (p as { playerId: string }).playerId === meId()) {
     const options = (p as { options: { id: string; type: CardType }[] | null }).options ?? [];

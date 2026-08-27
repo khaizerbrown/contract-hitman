@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from '../game.js';
 import type { CardType } from '../types.js';
-import { filler, playAndResolve } from './helpers.js';
+import { filler, playAndResolve, playAngel } from './helpers.js';
 
 function table(hands: Record<string, CardType[]>, deck: CardType[]) {
   return Game.forTest({
@@ -73,7 +73,8 @@ describe('A Hitman on the table wipes every Attack', () => {
     expect(g.currentPlayerId()).toBe('b');
     expect(g.state.currentTurnsRemaining).toBe(2);
 
-    g.draw('b'); // B draws the Hitman, the Angel saves them
+    g.draw('b'); // B draws the Hitman and answers it with their Angel
+    playAngel(g, 'b');
     g.choose('b', 'bottom');
 
     // B's second turn is gone, and so are C's and D's extra turns.

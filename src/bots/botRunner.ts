@@ -40,6 +40,17 @@ export class BotRunner {
       return;
     }
 
+    if (pending && pending.kind === 'angel') {
+      const bot = this.bot(pending.playerId);
+      if (!bot) return;
+      this.reschedule(`angel:${s.log.length}`, [bot.id], now, 300, 900);
+      if (now >= (this.dueAt[bot.id] ?? Infinity)) {
+        this.dueAt[bot.id] = Infinity;
+        bot.playAngel(g);
+      }
+      return;
+    }
+
     if (pending && pending.kind === 'steal') {
       const bot = this.bot(pending.playerId);
       if (!bot) return;

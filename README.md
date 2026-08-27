@@ -86,21 +86,29 @@ grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
 
 ## Rules decided where the brief was silent
 
-- **Angel** is never played by hand. It is consumed automatically the moment you
-  draw a Hitman, and it is gone afterwards. The next Hitman kills you.
+- **Angel is a card you place.** Draw a Hitman and you are offered the chance to
+  put an Angel down. It goes on the table like any other card, which gives the
+  rest of the table a beat to answer it. Auto-played if your timer runs out, so
+  a slow connection never costs a life. *(The brief had it fire automatically.
+  Changed on Mr K's instruction.)*
+  - **Cancel cannot touch an Angel.** It is not even offered.
+  - **Burn can.** Burning an Angel kills the player it was saving and destroys
+    every other Angel in every hand at the same time.
+  - **Mirror cannot.** Repeating somebody else's save has no meaning.
+  - **Lock can ban Angel.** While it is banned, anyone who draws a Hitman simply
+    dies, Angel in hand or not.
+  - Angels stack: hold three, survive three Hitmen.
 - **Response chains** cap at 3 responses. Cards resolve last-played-first.
 - **Mirror** re-triggers the last non-quick card played. Mirroring another quick
-  card does nothing, which keeps chains bounded. It can never produce an Angel:
-  an Angel firing is a reaction to a draw, not a card anyone played, so it never
-  becomes "the last card played". Drawing a Hitman opens no reflex window
-  either, so there is no moment to play a Mirror into.
+  card does nothing, which keeps chains bounded. It cannot be played against an
+  Angel.
 - **Burn** destroys the card it was played on plus every copy of that type in
   every hand. The deck and discard pile are untouched.
 - **Lock offers no choice.** It bans the type of the card played immediately
-  before it, for exactly 3 player-turns, counted down visibly. Hitman and Angel
-  can never be banned because neither is ever played from a hand. If nothing has
-  been played yet, Lock cannot be played. *(This departs from the brief, which
-  had the player choose the type. Changed on Mr K's instruction.)*
+  before it, for exactly 3 player-turns, counted down visibly. A Hitman can
+  never be banned, because a Hitman is never played from a hand. An Angel can.
+  If nothing has been played yet, Lock cannot be played. *(This departs from the
+  brief, which had the player choose the type. Changed on Mr K's instruction.)*
 - **Bottom Pull** replaces your end-of-turn draw with one from the bottom.
 - **Every clock freezes** while any player is making a choice.
 - **Steal, Attack, Mimic** cannot target yourself or an eliminated player.

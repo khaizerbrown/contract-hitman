@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { BALANCE } from '../../config/balance.js';
 import { Game } from '../game.js';
 import type { CardType } from '../types.js';
-import { cardOf, filler, handTypes, passAll, playAndResolve } from './helpers.js';
+import { cardOf, filler, handTypes, passAll, playAndResolve, surviveHitman } from './helpers.js';
 
 function table(hands: Record<string, CardType[]>, deck: CardType[] = filler(30)) {
   return Game.forTest({
@@ -88,8 +88,7 @@ describe('Lock', () => {
     );
   });
 
-  it('can never ban a Hitman or an Angel, because neither is ever played', () => {
-    // Draw a Hitman, be saved by the Angel, then Lock on the next turn.
+  it('can never ban a Hitman, because a Hitman is never played', () => {
     const g = Game.forTest({
       players: [
         { id: 'a', name: 'A', hand: ['ANGEL'] },
@@ -97,13 +96,39 @@ describe('Lock', () => {
       ],
       deck: ['HITMAN', ...filler(10)],
     });
-    g.draw('a');
-    g.choose('a', 'bottom');
+    surviveHitman(g, 'a', 'bottom');
     playAndResolve(g, 'b', 'PEEK');
     playAndResolve(g, 'b', 'LOCK');
     expect(g.isLocked('HITMAN')).toBe(false);
-    expect(g.isLocked('ANGEL')).toBe(false);
     expect(g.isLocked('PEEK')).toBe(true);
+  });
+
+  it('can ban an Angel, once somebody has put one down', () => {
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['ANGEL'] },
+        { id: 'b', name: 'B', hand: ['LOCK'] },
+      ],
+      deck: ['HITMAN', ...filler(10)],
+    });
+    surviveHitman(g, 'a', 'bottom'); // the Angel is now the last card played
+    playAndResolve(g, 'b', 'LOCK');
+    expect(g.isLocked('ANGEL')).toBe(true);
+  });
+
+  it('with Angel banned, the next Hitman simply kills whoever draws it', () => {
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['ANGEL', 'ANGEL'] },
+        { id: 'b', name: 'B', hand: ['LOCK'] },
+      ],
+      deck: ['HITMAN', 'HITMAN', ...filler(10)],
+    });
+    surviveHitman(g, 'a', 'top');
+    playAndResolve(g, 'b', 'LOCK'); // bans ANGEL
+    g.draw('b'); // B takes the Hitman off the top and has no Angel anyway
+    expect(g.isLocked('ANGEL')).toBe(true);
+    expect(g.player('b').alive).toBe(false);
   });
 });
 

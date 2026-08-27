@@ -128,6 +128,12 @@ export class Bot {
     game.choose(this.id, worst.id);
   }
 
+  /** A Hitman landed on this bot and it holds an answer. Put it down. */
+  playAngel(game: Game): void {
+    const angel = (game.viewFor(this.id).you?.hand ?? []).find((c) => c.type === 'ANGEL');
+    if (angel) this.play(game, angel);
+  }
+
   /** An Angel just saved this bot: decide where the Hitman goes back. */
   chooseHitmanPlacement(game: Game): void {
     const roll = Math.random();

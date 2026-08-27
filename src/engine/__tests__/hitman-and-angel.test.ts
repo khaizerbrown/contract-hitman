@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from '../game.js';
-import { cardOf, filler, handTypes, passAll } from './helpers.js';
+import { cardOf, filler, handTypes, passAll, playAngel, surviveHitman } from './helpers.js';
 
 function twoPlayers(aHand: string[], bHand: string[], deck: string[]) {
   return Game.forTest({
@@ -19,46 +19,49 @@ describe('Drawing a Hitman', () => {
     expect(g.player('a').alive).toBe(false);
   });
 
-  it('saves a player holding an Angel and uses the Angel up', () => {
+  it('offers the Angel rather than spending it, so the table can react', () => {
     const g = twoPlayers(['ANGEL'], ['PEEK'], ['HITMAN', ...filler(5)]);
     g.draw('a');
+    expect(g.state.pending?.kind).toBe('angel');
+    expect(handTypes(g, 'a')).toContain('ANGEL');
+  });
+
+  it('saves a player who puts their Angel down, and uses the Angel up', () => {
+    const g = twoPlayers(['ANGEL'], ['PEEK'], ['HITMAN', ...filler(5)]);
+    g.draw('a');
+    playAngel(g, 'a');
     expect(g.player('a').alive).toBe(true);
     expect(handTypes(g, 'a')).not.toContain('ANGEL');
   });
 
   it('lets the saved player put the Hitman back on top of the deck', () => {
     const g = twoPlayers(['ANGEL'], ['PEEK'], ['HITMAN', ...filler(5)]);
-    g.draw('a');
-    g.choose('a', 'top');
+    surviveHitman(g, 'a', 'top');
     expect(g.state.deck[0].type).toBe('HITMAN');
   });
 
   it('lets the saved player bury the Hitman at the bottom of the deck', () => {
     const g = twoPlayers(['ANGEL'], ['PEEK'], ['HITMAN', ...filler(5)]);
-    g.draw('a');
-    g.choose('a', 'bottom');
+    surviveHitman(g, 'a', 'bottom');
     expect(g.state.deck[g.state.deck.length - 1].type).toBe('HITMAN');
   });
 
   it('lets the saved player slide the Hitman into the middle of the deck', () => {
     const g = twoPlayers(['ANGEL'], ['PEEK'], ['HITMAN', ...filler(6)]);
-    g.draw('a');
-    g.choose('a', 'middle');
+    surviveHitman(g, 'a', 'middle');
     const middle = Math.floor((g.state.deck.length - 1) / 2);
     expect(g.state.deck[middle].type).toBe('HITMAN');
   });
 
   it('passes play to the next person once the Hitman is put back', () => {
     const g = twoPlayers(['ANGEL'], ['PEEK'], ['HITMAN', ...filler(5)]);
-    g.draw('a');
-    g.choose('a', 'top');
+    surviveHitman(g, 'a', 'top');
     expect(g.currentPlayerId()).toBe('b');
   });
 
   it('kills a player on their second Hitman, because the Angel is gone', () => {
     const g = twoPlayers(['ANGEL'], ['PEEK'], ['HITMAN', 'PEEK', 'HITMAN', ...filler(4)]);
-    g.draw('a'); // first Hitman - the Angel saves A
-    g.choose('a', 'bottom');
+    surviveHitman(g, 'a', 'bottom'); // first Hitman - the Angel answers it
     g.draw('b'); // B draws the harmless card on top
     g.draw('a'); // second Hitman - no Angel left
     expect(g.player('a').alive).toBe(false);
@@ -74,7 +77,9 @@ describe('Drawing a Hitman', () => {
     const g = twoPlayers(['ANGEL'], ['PEEK'], ['HITMAN', ...filler(6)]);
     g.draw('a');
     g.advance(6000);
-    g.checkTimers();
+    g.checkTimers(); // the Angel goes down on its own rather than costing a life
+    g.advance(6000);
+    g.checkTimers(); // and the Hitman goes back in the middle
     expect(g.state.pending).toBeNull();
     expect(g.state.deck.filter((c) => c.type === 'HITMAN').length).toBe(1);
   });
@@ -85,60 +90,63 @@ describe('Drawing a Hitman', () => {
   });
 });
 
-describe('You cannot Mirror your way to a free Angel', () => {
-  function angelThenHitman() {
-    // A is saved by their Angel and puts the Hitman back on top, so B draws it
-    // on the very next turn while holding a Mirror.
+describe('An Angel on the table', () => {
+  function hitmanOn(aHand: string[], bHand: string[], cHand: string[] = []) {
     return Game.forTest({
       players: [
-        { id: 'a', name: 'A', hand: ['ANGEL'] },
-        { id: 'b', name: 'B', hand: ['MIRROR'] },
-        { id: 'c', name: 'C', hand: ['PEEK'] },
+        { id: 'a', name: 'A', hand: aHand as never },
+        { id: 'b', name: 'B', hand: bHand as never },
+        { id: 'c', name: 'C', hand: cHand as never },
       ],
-      deck: ['HITMAN', 'HITMAN', ...filler(8)],
+      deck: ['HITMAN', ...filler(10)],
     });
   }
 
-  it('does not count an Angel firing as a card anyone played', () => {
-    const g = angelThenHitman();
+  it('cannot be cancelled, however much someone wants to', () => {
+    const g = hitmanOn(['ANGEL'], ['CANCEL']);
     g.draw('a');
-    g.choose('a', 'top');
-    expect(g.player('a').alive).toBe(true);
-    expect(g.state.lastPlayedType).toBeNull();
-  });
-
-  it('opens no reflex window when a Hitman is drawn, so Mirror cannot be played', () => {
-    const g = angelThenHitman();
-    g.draw('a');
-    g.choose('a', 'top');
-    const mirror = cardOf(g, 'b', 'MIRROR');
-    g.draw('b');
-    expect(g.state.pending).toBeNull();
-    expect(() => g.play('b', mirror.id)).toThrow();
-  });
-
-  it('kills the player who has no Angel, Mirror in hand or not', () => {
-    const g = angelThenHitman();
-    g.draw('a');
-    g.choose('a', 'top');
-    g.draw('b');
-    expect(g.player('b').alive).toBe(false);
-    expect(g.player('b').hand).toEqual([]);
-  });
-
-  it('never lets Mirror produce an Angel in an ordinary reflex window either', () => {
-    const g = Game.forTest({
-      players: [
-        { id: 'a', name: 'A', hand: ['PEEK'] },
-        { id: 'b', name: 'B', hand: ['MIRROR'] },
-      ],
-      deck: filler(10),
-    });
-    g.play('a', cardOf(g, 'a', 'PEEK').id);
-    g.play('b', cardOf(g, 'b', 'MIRROR').id);
+    g.play('a', cardOf(g, 'a', 'ANGEL').id);
+    const cancel = cardOf(g, 'b', 'CANCEL');
+    expect(() => g.play('b', cancel.id)).toThrow();
     passAll(g);
-    expect(handTypes(g, 'b')).not.toContain('ANGEL');
-    expect(handTypes(g, 'b')).toEqual([]);
+    expect(g.player('a').alive).toBe(true);
+  });
+
+  it('does not even offer Cancel to a player holding one', () => {
+    const g = hitmanOn(['ANGEL'], ['CANCEL']);
+    g.draw('a');
+    g.play('a', cardOf(g, 'a', 'ANGEL').id);
+    // Nobody holds anything that can answer an Angel, so no window opens at all.
+    expect(g.state.pending?.kind).not.toBe('quickWindow');
+  });
+
+  it('cannot be mirrored, because repeating a save means nothing', () => {
+    const g = hitmanOn(['ANGEL'], ['MIRROR']);
+    g.draw('a');
+    g.play('a', cardOf(g, 'a', 'ANGEL').id);
+    const mirror = cardOf(g, 'b', 'MIRROR');
+    expect(() => g.play('b', mirror.id)).toThrow();
+    passAll(g);
+    expect(handTypes(g, 'b')).toEqual(['MIRROR']);
+  });
+
+  it('can be burned, and that kills the player it was saving', () => {
+    const g = hitmanOn(['ANGEL'], ['BURN']);
+    g.draw('a');
+    g.play('a', cardOf(g, 'a', 'ANGEL').id);
+    g.play('b', cardOf(g, 'b', 'BURN').id);
+    passAll(g);
+    expect(g.player('a').alive).toBe(false);
+  });
+
+  it('burning one takes every other Angel at the table with it', () => {
+    const g = hitmanOn(['ANGEL', 'ANGEL'], ['BURN'], ['ANGEL', 'ANGEL', 'PEEK']);
+    g.draw('a');
+    g.play('a', cardOf(g, 'a', 'ANGEL').id);
+    g.play('b', cardOf(g, 'b', 'BURN').id);
+    passAll(g);
+    expect(g.player('a').alive).toBe(false);
+    expect(handTypes(g, 'c')).toEqual(['PEEK']);
   });
 });
 

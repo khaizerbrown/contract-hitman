@@ -142,6 +142,52 @@ describe('You cannot Mirror your way to a free Angel', () => {
   });
 });
 
+describe('Angels cannot be destroyed by anything', () => {
+  it('cannot be burned, because Burn only hits a card that was played', () => {
+    // C burns A's Peek. Everyone's Angels should be untouched.
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['PEEK', 'ANGEL'] },
+        { id: 'b', name: 'B', hand: ['ANGEL', 'ANGEL'] },
+        { id: 'c', name: 'C', hand: ['BURN'] },
+      ],
+      deck: filler(10),
+    });
+    g.play('a', cardOf(g, 'a', 'PEEK').id);
+    g.play('c', cardOf(g, 'c', 'BURN').id);
+    passAll(g);
+    expect(handTypes(g, 'a')).toEqual(['ANGEL']);
+    expect(handTypes(g, 'b')).toEqual(['ANGEL', 'ANGEL']);
+  });
+
+  it('cannot be played from a hand, so it can never be burned at all', () => {
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['ANGEL'] },
+        { id: 'b', name: 'B', hand: ['BURN'] },
+      ],
+      deck: filler(10),
+    });
+    expect(() => g.play('a', cardOf(g, 'a', 'ANGEL').id)).toThrow();
+    expect(handTypes(g, 'a')).toEqual(['ANGEL']);
+  });
+
+  it('can be taken by Steal, which is the one way to lose one', () => {
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['STEAL'] },
+        { id: 'b', name: 'B', hand: ['ANGEL'] },
+      ],
+      deck: filler(10),
+    });
+    g.play('a', cardOf(g, 'a', 'STEAL').id, { targetPlayerId: 'b' });
+    passAll(g);
+    g.choose('b', cardOf(g, 'b', 'ANGEL').id);
+    expect(handTypes(g, 'a')).toEqual(['ANGEL']);
+    expect(handTypes(g, 'b')).toEqual([]);
+  });
+});
+
 describe('Winning', () => {
   it('ends the match the moment one player is left standing', () => {
     const g = twoPlayers(['PEEK'], ['PEEK'], ['HITMAN', ...filler(5)]);

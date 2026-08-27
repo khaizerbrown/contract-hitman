@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"
+    />
+    <meta name="theme-color" content="#12100e" />
+    <title>CONTRACT // HITMAN</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Special+Elite&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/client/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- ------------------------------------------------------- setup -->
+      <section id="setup" class="screen setup">
+        <div class="dossier">
+          <div class="stamp">CLASSIFIED</div>
+          <h1 class="brand">CONTRACT <span>//</span> HITMAN</h1>
+          <p class="tagline">
+            Draw from the deck. Somewhere in it are the contracts with your name on
+            them. Last one breathing takes the file.
+          </p>
+
+          <label class="field">
+            <span>CODENAME</span>
+            <input id="playerName" maxlength="12" placeholder="YOU" autocomplete="off" />
+          </label>
+
+          <label class="field">
+            <span>OPPONENTS <b id="botCountLabel">3</b></span>
+            <input id="botCount" type="range" min="1" max="11" value="3" />
+          </label>
+
+          <div class="setupStats" id="setupStats"></div>
+
+          <button id="startBtn" class="primary">PLAY THE BOTS</button>
+
+          <div class="divider"><span>OR PLAY PEOPLE</span></div>
+
+          <button id="createRoomBtn">CREATE A PRIVATE ROOM</button>
+
+          <div class="joinRow">
+            <input id="joinCode" maxlength="4" placeholder="CODE" autocomplete="off" />
+            <button id="joinRoomBtn">JOIN</button>
+          </div>
+
+          <p class="footnote" id="netStatus">Guests only. No accounts, no passwords.</p>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------------------- lobby -->
+      <section id="lobby" class="screen setup hidden">
+        <div class="dossier">
+          <div class="stamp">PRIVATE</div>
+          <h1 class="brand">THE <span>TABLE</span></h1>
+
+          <div class="codeBox">
+            <div>
+              <span>INVITE CODE</span>
+              <b id="roomCode">----</b>
+            </div>
+            <button id="copyCode">COPY LINK</button>
+          </div>
+
+          <div class="seats" id="seats"></div>
+
+          <div class="row">
+            <button id="addBotBtn">ADD A BOT</button>
+            <button id="startMatchBtn" class="primary">START</button>
+          </div>
+
+          <p class="footnote" id="lobbyHint"></p>
+          <button id="leaveRoomBtn" class="quiet">LEAVE THE TABLE</button>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------------------- match -->
+      <section id="match" class="screen hidden">
+        <header class="topbar">
+          <div class="brandSmall">CONTRACT <span>//</span> HITMAN</div>
+          <div class="clock" id="clock">
+            <div class="clockBar"><i id="clockFill"></i></div>
+            <div class="clockText"><b id="clockNum">15</b><span id="clockLabel">TURN</span></div>
+          </div>
+        </header>
+
+        <div class="opponents" id="opponents"></div>
+
+        <div class="centre">
+          <div class="deck" id="deck">
+            <div class="deckInner">
+              <div class="hitmenLeft" id="hitmenLeft">0</div>
+              <div class="hitmenLabel">HITMEN STILL IN THE DECK</div>
+              <div class="deckCount" id="deckCount"></div>
+            </div>
+          </div>
+          <div class="statusStrip" id="statusStrip"></div>
+        </div>
+
+        <div class="log" id="log"></div>
+
+        <div class="handwrap">
+          <div class="reactStrip hidden" id="reactStrip"></div>
+          <div class="handLabel" id="handLabel">YOUR HAND</div>
+          <div class="hand" id="hand"></div>
+          <div class="actions">
+            <button id="drawBtn" class="primary">DRAW &amp; END TURN</button>
+          </div>
+        </div>
+
+        <div id="overlay" class="overlay hidden"></div>
+        <div id="toast" class="toast hidden"></div>
+        <div id="netBanner" class="netBanner hidden"></div>
+      </section>
+    </div>
+
+    <script type="module" src="/src/client/main.ts"></script>
+  </body>
+</html>

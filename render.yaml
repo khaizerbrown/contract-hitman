@@ -1,0 +1,12 @@
+# Deploying to Render: point it at this repository and it reads this file.
+services:
+  - type: web
+    name: contract-hitman
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: '20'

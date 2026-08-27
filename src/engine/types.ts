@@ -112,7 +112,14 @@ export type LogEntry =
   | { t: 'locked'; playerId: string; cardType: CardType; turns: number }
   | { t: 'lock_expired'; cardType: CardType }
   | { t: 'stolen'; thiefId: string; fromPlayerId: string }
-  | { t: 'mimicked'; playerId: string; targetPlayerId: string; cards: number }
+  | {
+      t: 'mimicked';
+      playerId: string;
+      targetPlayerId: string;
+      cards: number;
+      /** How many of their own cards they threw away to do it. */
+      lost: number;
+    }
   | { t: 'drew'; playerId: string; fromBottom: boolean }
   | { t: 'hitman_drawn'; playerId: string }
   | { t: 'angel_saved'; playerId: string; placement: 'top' | 'middle' | 'bottom' }

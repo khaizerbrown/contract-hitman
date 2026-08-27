@@ -101,6 +101,11 @@ grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
 - **Bottom Pull** replaces your end-of-turn draw with one from the bottom.
 - **Every clock freezes** while any player is making a choice.
 - **Steal, Attack, Mimic** cannot target yourself or an eliminated player.
+- **Mimic is a swap, not a windfall.** You throw your whole hand away, Angel
+  and all, and take a copy of theirs in its place. They keep theirs. Copying a
+  hoarder can hand you two spare lives; copying someone empty-handed costs you
+  everything for nothing. *(The brief had Mimic as a free copy on top of your
+  existing hand. Changed on Mr K's instruction.)*
 - **Mimic never copies another Mimic.** If it did, one Mimic would become two,
   then four, and hands would grow without limit until the game locked up. This
   was found by playing hundreds of bot matches, not by reading the brief.

@@ -148,11 +148,37 @@ describe('Steal', () => {
 });
 
 describe('Mimic', () => {
-  it('copies the whole hand without taking anything away', () => {
+  it('gives you a copy of their hand and they keep theirs', () => {
     const g = table({ a: ['MIMIC'], b: ['PEEK', 'SKIP'] });
     playAndResolve(g, 'a', 'MIMIC', { targetPlayerId: 'b' });
     expect(handTypes(g, 'a').sort()).toEqual(['PEEK', 'SKIP']);
     expect(handTypes(g, 'b').sort()).toEqual(['PEEK', 'SKIP']);
+  });
+
+  it('throws your own hand away to do it', () => {
+    const g = table({ a: ['MIMIC', 'ATTACK', 'BURN'], b: ['PEEK'] });
+    playAndResolve(g, 'a', 'MIMIC', { targetPlayerId: 'b' });
+    expect(handTypes(g, 'a')).toEqual(['PEEK']);
+  });
+
+  it('copies their Angel across', () => {
+    const g = table({ a: ['MIMIC', 'PEEK'], b: ['ANGEL', 'ANGEL'] });
+    playAndResolve(g, 'a', 'MIMIC', { targetPlayerId: 'b' });
+    expect(handTypes(g, 'a')).toEqual(['ANGEL', 'ANGEL']);
+    expect(handTypes(g, 'b')).toEqual(['ANGEL', 'ANGEL']);
+  });
+
+  it('costs you your own Angel, so it is a real gamble', () => {
+    const g = table({ a: ['MIMIC', 'ANGEL'], b: ['PEEK'] });
+    playAndResolve(g, 'a', 'MIMIC', { targetPlayerId: 'b' });
+    expect(handTypes(g, 'a')).toEqual(['PEEK']);
+    expect(handTypes(g, 'a')).not.toContain('ANGEL');
+  });
+
+  it('leaves you with nothing at all if their hand is empty', () => {
+    const g = table({ a: ['MIMIC', 'ANGEL', 'ATTACK'], b: [] });
+    playAndResolve(g, 'a', 'MIMIC', { targetPlayerId: 'b' });
+    expect(handTypes(g, 'a')).toEqual([]);
   });
 
   it('never copies another Mimic, so Mimic cards cannot breed', () => {
@@ -163,10 +189,17 @@ describe('Mimic', () => {
   });
 
   it('stops at the hand ceiling, so a hand stays readable on a phone', () => {
-    const big: CardType[] = Array.from({ length: 12 }, () => 'PEEK');
-    const g = table({ a: ['MIMIC', ...big.slice(0, 10)], b: big });
+    const huge: CardType[] = Array.from({ length: 25 }, () => 'PEEK');
+    const g = table({ a: ['MIMIC'], b: huge });
     playAndResolve(g, 'a', 'MIMIC', { targetPlayerId: 'b' });
     expect(g.player('a').hand.length).toBe(BALANCE.maxHandSize);
-    expect(g.player('b').hand.length).toBe(12);
+    expect(g.player('b').hand.length).toBe(25);
+  });
+
+  it('says in the log what it cost you', () => {
+    const g = table({ a: ['MIMIC', 'ATTACK', 'BURN'], b: ['PEEK'] });
+    playAndResolve(g, 'a', 'MIMIC', { targetPlayerId: 'b' });
+    const entry = g.state.log.find((e) => e.t === 'mimicked');
+    expect(entry).toMatchObject({ cards: 1, lost: 2 });
   });
 });

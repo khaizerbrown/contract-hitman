@@ -18,7 +18,7 @@ export const CARD_INFO: Record<CardType, CardInfo> = {
   STEAL: { name: 'Steal', blurb: 'They choose a card to hand you.', needsTarget: true },
   PEEK: { name: 'Peek', blurb: 'See the top 3 cards. Only you.' },
   LOCK: { name: 'Lock', blurb: 'Bans the card just played for 3 turns.' },
-  MIMIC: { name: 'Mimic', blurb: 'Copy their whole hand. They keep theirs.', needsTarget: true },
+  MIMIC: { name: 'Mimic', blurb: 'Swap your hand for a copy of theirs.', needsTarget: true },
   BOTTOM_PULL: { name: 'Bottom Pull', blurb: 'Your draw comes from the bottom.' },
   REAL_SHUFFLE: { name: 'Shuffle', blurb: 'Shuffle the deck.' },
   FAKE_SHUFFLE: { name: 'Shuffle', blurb: 'Looks like a shuffle. Is not.' },

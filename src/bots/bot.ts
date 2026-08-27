@@ -68,9 +68,14 @@ export class Bot {
       if (worthIt.includes(wouldBan) || this.chance(0.25)) return this.play(game, lock);
     }
 
+    // Mimic costs this bot its whole hand, Angel included, so it is only worth
+    // it when the other hand is clearly better and there is little to lose.
     const mimic = held('MIMIC');
-    if (mimic && fattest && fattest.handCount >= 3 && this.chance(0.4)) {
-      return this.play(game, mimic, { targetPlayerId: fattest.id });
+    if (mimic && fattest && fattest.handCount >= hand.length + 2) {
+      const givingUpAngel = hasAngel;
+      if (!givingUpAngel || fattest.handCount >= hand.length + 4) {
+        if (this.chance(0.4)) return this.play(game, mimic, { targetPlayerId: fattest.id });
+      }
     }
 
     const fake = held('FAKE_SHUFFLE');

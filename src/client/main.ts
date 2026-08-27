@@ -452,7 +452,10 @@ function describe(v: MatchView, e: LogEntry): { text: string; cls: string } {
     case 'stolen':
       return { text: `${n(e.thiefId)} takes a card from ${n(e.fromPlayerId)}`, cls: '' };
     case 'mimicked':
-      return { text: `${n(e.playerId)} copies ${n(e.targetPlayerId)}'s hand (${e.cards})`, cls: '' };
+      return {
+        text: `${n(e.playerId)} throws away ${e.lost} to copy ${n(e.targetPlayerId)}'s hand (${e.cards})`,
+        cls: '',
+      };
     case 'drew':
       return { text: `${n(e.playerId)} draws${e.fromBottom ? ' from the bottom' : ''}`, cls: '' };
     case 'hitman_drawn':

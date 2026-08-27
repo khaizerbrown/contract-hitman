@@ -589,12 +589,16 @@ export class Game {
         const target = args.targetPlayerId;
         if (target) {
           const actor = this.player(actorId);
-          const room = Math.max(0, s.balance.maxHandSize - actor.hand.length);
-          // Mimic never copies itself. If it did, one Mimic would become two,
-          // then four, and hands would grow without limit.
+          // Mimic is a swap, not a windfall: your own hand goes, Angel and all,
+          // and you take a copy of theirs in its place. They keep theirs.
+          const lost = actor.hand.length;
+          for (const c of actor.hand) s.discard.push(c);
+          actor.hand = [];
+          // It still never copies another Mimic. One Mimic becoming two, then
+          // four, is how hands used to grow without limit.
           const copy = this.player(target)
             .hand.filter((c) => c.type !== 'MIMIC')
-            .slice(0, room)
+            .slice(0, s.balance.maxHandSize)
             .map((c) => makeCard(c.type));
           actor.hand.push(...copy);
           this.log({
@@ -602,6 +606,7 @@ export class Game {
             playerId: actorId,
             targetPlayerId: target,
             cards: copy.length,
+            lost,
           });
         }
         break;

@@ -191,6 +191,17 @@ export class Game {
     return this.state.players.filter((p) => p.alive);
   }
 
+  /**
+   * Extra turns this player still has to take because of an Attack. For whoever
+   * is acting the debt is already being paid off, so it comes from the turn
+   * counter rather than the outstanding effects.
+   */
+  extraTurnsOwedBy(playerId: string): number {
+    const s = this.state;
+    if (playerId === this.currentPlayerId()) return Math.max(0, s.currentTurnsRemaining - 1);
+    return s.attackEffects.reduce((total, eff) => total + (eff.owed[playerId] ?? 0), 0);
+  }
+
   /** The counter the whole table can see. This is the tension. */
   hitmenRemaining(): number {
     return this.state.deck.filter((c) => c.type === 'HITMAN').length;
@@ -996,6 +1007,9 @@ export class Game {
         alive: p.alive,
         connected: p.connected,
         handCount: p.hand.length,
+        // Extra turns an Attack has hung on them. Public: everyone watched it
+        // happen, so everyone can see who is carrying it.
+        extraTurns: this.extraTurnsOwedBy(p.id),
       })),
       currentPlayerId: this.currentPlayerId(),
       currentTurnsRemaining: s.currentTurnsRemaining,
@@ -1033,6 +1047,8 @@ export class Game {
         : null,
       turnDeadline: s.turnDeadline,
       lastPlayedType: s.lastPlayedType,
+      /** Bottom Pull is on the table, so this draw comes off the bottom. */
+      drawFromBottom: s.drawFromBottom,
       now: s.now,
       privateInfo: viewerId ? s.privateInfo[viewerId] ?? [] : [],
       log: s.log,

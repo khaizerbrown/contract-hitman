@@ -101,3 +101,65 @@ describe('A Hitman on the table wipes every Attack', () => {
     expect(g.state.currentTurnsRemaining).toBe(1);
   });
 });
+
+describe('What the table can see about an Attack', () => {
+  it('marks the attacked player straight away, before their turn comes round', () => {
+    const g = table({ a: ['ATTACK'], b: [], c: [] }, filler(20));
+    playAndResolve(g, 'a', 'ATTACK', { targetPlayerId: 'b' });
+
+    // A is still acting. B has not started their turn, but everyone can see it.
+    const seenByC = g.viewFor('c');
+    expect(seenByC.players.find((p) => p.id === 'b')?.extraTurns).toBe(1);
+    expect(seenByC.players.find((p) => p.id === 'c')?.extraTurns).toBe(0);
+  });
+
+  it('keeps showing it while they work through the extra turns', () => {
+    const g = table({ a: ['ATTACK'], b: [], c: [] }, filler(20));
+    playAndResolve(g, 'a', 'ATTACK', { targetPlayerId: 'b' });
+    g.draw('a');
+    expect(g.viewFor('a').players.find((p) => p.id === 'b')?.extraTurns).toBe(1);
+    g.draw('b');
+    expect(g.viewFor('a').players.find((p) => p.id === 'b')?.extraTurns).toBe(0);
+  });
+
+  it('shows Full Attack landing on everybody at once', () => {
+    const g = table({ a: ['FULL_ATTACK'], b: [], c: [], d: [] }, filler(20));
+    playAndResolve(g, 'a', 'FULL_ATTACK');
+    const v = g.viewFor('b');
+    expect(v.players.find((p) => p.id === 'a')?.extraTurns).toBe(0);
+    for (const id of ['b', 'c', 'd']) {
+      expect(v.players.find((p) => p.id === id)?.extraTurns).toBe(1);
+    }
+  });
+
+  it('clears the marks when a Hitman wipes every Attack', () => {
+    const g = table(
+      { a: ['FULL_ATTACK'], b: [], c: [], d: [] },
+      ['PEEK', 'HITMAN', ...filler(20)],
+    );
+    playAndResolve(g, 'a', 'FULL_ATTACK');
+    g.draw('a');
+    g.draw('b'); // B has no Angel and goes
+    const v = g.viewFor('a');
+    for (const id of ['c', 'd']) {
+      expect(v.players.find((p) => p.id === id)?.extraTurns).toBe(0);
+    }
+  });
+});
+
+describe('What the table can see about Bottom Pull', () => {
+  it('says the draw is coming off the bottom once it is played', () => {
+    const g = table({ a: ['BOTTOM_PULL'], b: [] }, filler(20));
+    expect(g.viewFor('a').drawFromBottom).toBe(false);
+    playAndResolve(g, 'a', 'BOTTOM_PULL');
+    expect(g.viewFor('a').drawFromBottom).toBe(true);
+    expect(g.viewFor('b').drawFromBottom).toBe(true);
+  });
+
+  it('stops saying it once the turn has moved on', () => {
+    const g = table({ a: ['BOTTOM_PULL'], b: [] }, filler(20));
+    playAndResolve(g, 'a', 'BOTTOM_PULL');
+    g.draw('a');
+    expect(g.viewFor('a').drawFromBottom).toBe(false);
+  });
+});

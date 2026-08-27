@@ -114,7 +114,11 @@ grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
   never be banned, because a Hitman is never played from a hand. An Angel can.
   If nothing has been played yet, Lock cannot be played. *(This departs from the
   brief, which had the player choose the type. Changed on Mr K's instruction.)*
-- **Bottom Pull** replaces your end-of-turn draw with one from the bottom.
+- **Bottom Pull** replaces your end-of-turn draw with one from the bottom. Once
+  it is played the draw button says so and a chip warns you, because the bottom
+  is where the Hitmen live.
+- **Attack** marks the player it lands on straight away, before their turn comes
+  round, so the whole table can see who is carrying extra turns.
 - **Peek** shows the top three above your hand, marked NEXT / THEN / THEN, with a
   Hitman among them picked out in red. It disappears the moment anyone draws,
   because what you saw is no longer the top of the deck.

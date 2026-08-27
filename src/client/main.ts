@@ -293,7 +293,8 @@ function signature(v: MatchView): string {
     v.direction,
     v.deckCount,
     v.hitmenRemaining,
-    v.players.map((p) => [p.id, p.alive, p.handCount, p.connected]),
+    v.drawFromBottom,
+    v.players.map((p) => [p.id, p.alive, p.handCount, p.connected, p.extraTurns]),
     v.you?.hand.map((c) => c.id),
     v.locks,
     v.stack,
@@ -420,8 +421,8 @@ function renderOpponents(v: MatchView): void {
       if (p.id === v.currentPlayerId) classes.push('current');
       if (targeting && p.alive) classes.push('targetable');
       const extra =
-        p.id === v.currentPlayerId && v.currentTurnsRemaining > 1
-          ? `<div class="extra">x${v.currentTurnsRemaining}</div>`
+        p.alive && p.extraTurns > 0
+          ? `<div class="extra">+${p.extraTurns} TURN${p.extraTurns === 1 ? '' : 'S'}</div>`
           : '';
       const state = !p.alive ? 'ELIMINATED' : p.connected ? `${p.handCount} cards` : 'SIGNAL LOST';
       return `<div class="${classes.join(' ')}" data-target="${p.id}">
@@ -448,9 +449,13 @@ function renderStatus(v: MatchView): void {
     );
   }
   if (v.direction === -1) chips.push('<span class="chip">ORDER REVERSED</span>');
-  if (v.currentTurnsRemaining > 1) {
+  if (v.drawFromBottom && v.currentPlayerId === meId()) {
+    chips.push('<span class="chip lock">YOUR DRAW COMES OFF THE BOTTOM</span>');
+  }
+  const mine = v.players.find((p) => p.id === meId());
+  if (mine && mine.alive && mine.extraTurns > 0) {
     chips.push(
-      `<span class="chip alert">${nameOf(v, v.currentPlayerId)} OWES ${v.currentTurnsRemaining} TURNS</span>`,
+      `<span class="chip alert">YOU OWE ${mine.extraTurns} EXTRA TURN${mine.extraTurns === 1 ? '' : 'S'}</span>`,
     );
   }
   if (v.you && !v.you.alive && v.phase === 'playing') {
@@ -625,8 +630,9 @@ function renderActions(v: MatchView): void {
   }
   const canDraw =
     !v.pending && v.currentPlayerId === meId() && v.you?.alive === true && v.phase === 'playing';
+  const drawLabel = v.drawFromBottom ? 'DRAW FROM THE BOTTOM' : 'DRAW &amp; END TURN';
   actions.innerHTML = `<button id="drawBtn" class="primary" ${canDraw ? '' : 'disabled'}>
-    ${canDraw ? 'DRAW &amp; END TURN' : waitingText(v)}
+    ${canDraw ? drawLabel : waitingText(v)}
   </button>`;
 }
 

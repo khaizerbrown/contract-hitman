@@ -205,7 +205,7 @@ input[type='range'] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 6px;
   padding: 10px 14px calc(10px);
   border-bottom: 1px solid var(--line);
   padding-top: calc(10px + env(safe-area-inset-top));
@@ -226,7 +226,9 @@ input[type='range'] {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 132px;
+  flex: 1;
+  min-width: 96px;
+  max-width: 180px;
 }
 
 .clockBar {
@@ -1147,6 +1149,11 @@ button.quiet {
   background: none;
 }
 
+.leaveBtn.off {
+  color: #4a453c;
+  text-decoration: line-through;
+}
+
 .leaveBtn.armed {
   color: #fff;
   background: var(--blood);
@@ -1182,4 +1189,114 @@ button.quiet {
 
 .slotPick button {
   width: 100%;
+}
+
+/* ----------------------------------------------------------- the big beats */
+
+.moments {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.moment {
+  position: absolute;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-align: center;
+  padding: 14px 26px;
+  border: 3px solid currentColor;
+  border-radius: 3px;
+  white-space: nowrap;
+  animation: stamp 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.moment small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  opacity: 0.75;
+  margin-top: 4px;
+  font-weight: 400;
+}
+
+.moment.hit {
+  color: var(--blood-bright);
+  font-size: 24px;
+  background: rgba(20, 6, 6, 0.86);
+  box-shadow: 0 0 60px rgba(192, 37, 37, 0.5);
+}
+
+.moment.save {
+  color: var(--brass);
+  font-size: 20px;
+  background: rgba(22, 18, 8, 0.86);
+  box-shadow: 0 0 50px rgba(201, 162, 39, 0.4);
+}
+
+.moment.out {
+  color: #e6dcc4;
+  font-size: 19px;
+  background: rgba(10, 9, 8, 0.9);
+}
+
+@keyframes stamp {
+  0% {
+    opacity: 0;
+    transform: scale(2.4) rotate(-9deg);
+  }
+  16% {
+    opacity: 1;
+    transform: scale(1) rotate(-4deg);
+  }
+  74% {
+    opacity: 1;
+    transform: scale(1) rotate(-4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.06) rotate(-4deg);
+  }
+}
+
+/* the whole table flinches when a Hitman lands */
+.flinch {
+  animation: flinch 0.5s ease-out;
+}
+
+@keyframes flinch {
+  0% { background-color: rgba(140, 28, 28, 0.32); }
+  100% { background-color: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moment { animation-duration: 0.01s; }
+  .flinch { animation: none; }
+  .deck.grim .hitmenLeft { animation: none; }
+  .card.hot { animation: none; }
+  .opp.targetable { animation: none; }
+}
+
+/* On a narrow phone the top bar is for the clock and the two controls. The
+   title is decoration and can go. */
+@media (max-width: 400px) {
+  .brandSmall {
+    display: none;
+  }
+  .leaveBtn {
+    padding: 7px 6px;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+  }
+}
+
+@media (max-width: 340px) {
+  .clock {
+    min-width: 76px;
+  }
 }

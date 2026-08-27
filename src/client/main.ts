@@ -1,6 +1,7 @@
 import { LocalMatch } from './localMatch.js';
 import { Net } from './net.js';
 import { CARD_INFO, CARD_KIND, CARD_MARK, CARD_NUMBER } from './cardInfo.js';
+import { loadSoundPreference, setSoundOn, sound, soundIsOn, wakeAudio } from './sound.js';
 import { GameError, type MatchView } from '../engine/game.js';
 import { BALANCE } from '../config/balance.js';
 import { buildBaseDeck, hitmanCount } from '../engine/deck.js';
@@ -36,6 +37,10 @@ let toastTimer: number | undefined;
 const net = new Net();
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+
+loadSoundPreference();
+// Browsers will not make a sound until the player has touched the page.
+document.addEventListener('pointerdown', () => wakeAudio(), { once: true });
 const meId = () => driver?.humanId ?? '';
 
 // ============================================================== setup screen
@@ -77,6 +82,7 @@ $('startBtn').addEventListener('click', () => {
   armedCard = null;
   peeksDismissed = 0;
   deckAtStart = 0;
+  beatsShown = 0;
   lastSignature = '';
   showScreen('match');
   startLoop();
@@ -157,6 +163,7 @@ net.onRoom = (room) => {
       driver = net;
       lastSignature = '';
       deckAtStart = 0;
+      beatsShown = 0;
       startLoop();
     }
     showScreen('match');
@@ -208,6 +215,19 @@ function renderLobby(room: RoomInfo): void {
 $('addBotBtn').addEventListener('click', () => net.send({ t: 'addBot' }));
 $('startMatchBtn').addEventListener('click', () => net.send({ t: 'startMatch' }));
 $('leaveRoomBtn').addEventListener('click', () => net.send({ t: 'leaveRoom' }));
+
+function paintSoundButton(): void {
+  const btn = $('soundBtn');
+  btn.textContent = soundIsOn() ? 'SOUND' : 'MUTED';
+  btn.classList.toggle('off', !soundIsOn());
+}
+paintSoundButton();
+
+$('soundBtn').addEventListener('click', () => {
+  setSoundOn(!soundIsOn());
+  paintSoundButton();
+  if (soundIsOn()) sound('play');
+});
 
 $('leaveMatchBtn').addEventListener('click', () => {
   const btn = $('leaveMatchBtn');
@@ -354,9 +374,70 @@ function signature(v: MatchView): string {
   ]);
 }
 
+// ------------------------------------------------------------- the big beats
+
+/** How much of the log has already been turned into sound and movement. */
+let beatsShown = 0;
+
+/**
+ * Some things deserve more than a line of text. These are drawn on their own
+ * layer, driven by new entries in the log, so they survive the screen being
+ * rebuilt underneath them.
+ */
+function playBeats(v: MatchView): void {
+  if (beatsShown === 0) {
+    beatsShown = v.log.length; // do not replay the whole match on arrival
+    return;
+  }
+  const fresh = v.log.slice(beatsShown);
+  beatsShown = v.log.length;
+
+  for (const e of fresh) {
+    if (e.t === 'hitman_drawn') {
+      const mine = e.playerId === meId();
+      stamp('hit', 'HITMAN', mine ? 'DRAWN ON YOU' : `DRAWN ON ${nameOf(v, e.playerId)}`);
+      flinch();
+      sound('hitman');
+    } else if (e.t === 'angel_played') {
+      stamp('save', e.mirrored ? 'MIRRORED' : 'ANGEL', 'THE BULLET STOPS HERE');
+      sound('angel');
+    } else if (e.t === 'angel_burned') {
+      stamp('hit', 'ANGEL BURNED', `${nameOf(v, e.playerId)} HAS NOTHING LEFT`);
+      sound('hitman');
+    } else if (e.t === 'eliminated') {
+      stamp('out', nameOf(v, e.playerId), 'CONTRACT CLOSED');
+      sound('out');
+    } else if (e.t === 'card_played') {
+      sound('play');
+    } else if (e.t === 'drew') {
+      sound('draw');
+    } else if (e.t === 'burned') {
+      sound('burn');
+    }
+  }
+}
+
+function stamp(kind: 'hit' | 'save' | 'out', line: string, sub: string): void {
+  const layer = $('moments');
+  const el = document.createElement('div');
+  el.className = `moment ${kind}`;
+  el.innerHTML = `${line}<small>${sub}</small>`;
+  layer.appendChild(el);
+  window.setTimeout(() => el.remove(), 1600);
+}
+
+function flinch(): void {
+  const el = $('match');
+  el.classList.remove('flinch');
+  void el.offsetWidth; // restart the animation even if it is already running
+  el.classList.add('flinch');
+  window.setTimeout(() => el.classList.remove('flinch'), 600);
+}
+
 function renderIfChanged(): void {
   const v = driver?.view;
   if (!v) return;
+  playBeats(v);
   const sig = signature(v);
   if (sig === lastSignature) return;
   lastSignature = sig;

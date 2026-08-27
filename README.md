@@ -34,6 +34,22 @@ Works on a phone in portrait, which is what it is designed for.
 To test it yourself, open the site in two browser tabs. Each tab is a separate
 player - identity is stored per tab, not per browser, exactly so this works.
 
+## The look and the noise
+
+Every card carries a drawn mark, a case-file number, and a tint by family, over
+a paper grain. The deck is a stack of leaves that thins as it empties, and once
+the Hitman density climbs the pile shifts and the counter starts to breathe.
+
+Hitmen, Angels and eliminations get stamped across the screen on their own
+layer, so they survive the rest of the screen redrawing underneath them.
+
+Sound is synthesised in the browser - there are no audio files to download and
+it works offline. Browsers stay silent until the player has touched the page,
+so the audio only wakes on the first tap. There is a SOUND / MUTED toggle in the
+top bar and the choice is remembered.
+
+Anyone who has asked their system to reduce motion gets none of the movement.
+
 ## Deploying it
 
 The server is a plain Node app that serves the website and the game from one

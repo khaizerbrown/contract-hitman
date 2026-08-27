@@ -630,6 +630,13 @@ function renderDeck(v: MatchView): void {
   // The stack itself thins out. Six leaves of paper at the start, one at the end.
   document.documentElement.style.setProperty('--stack', String(Math.max(0, Math.round(left * 6))));
 
+  // The number the whole game turns on: the chance the next card kills you.
+  const chance = v.deckCount > 0 ? Math.round((v.hitmenRemaining / v.deckCount) * 100) : 0;
+  $('deathChance').textContent = `${chance}%`;
+  $('hudHitmen').textContent = String(v.hitmenRemaining);
+  $('hudAlive').textContent = String(v.players.filter((p) => p.alive).length);
+  document.querySelector('.hud .danger')?.classList.toggle('grim', chance >= 25);
+
   $('hitmenLeft').textContent = String(v.hitmenRemaining);
   $('deckCount').textContent =
     v.deckCount === 1 ? '1 card left' : `${v.deckCount} cards left`;

@@ -1867,3 +1867,65 @@ button.quiet {
 #match .log::-webkit-scrollbar {
   display: none;
 }
+
+/* --------------------------------------------------- the three numbers that matter */
+
+.hud {
+  position: absolute;
+  top: calc(34px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 22px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.hud .stat {
+  text-align: center;
+  font-family: 'Oswald', sans-serif;
+  line-height: 1;
+}
+
+.hud .stat b {
+  display: block;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--paper);
+}
+
+.hud .stat span {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.hud .danger b {
+  color: color-mix(in srgb, var(--paper) calc((1 - var(--danger)) * 100%), var(--blood-bright));
+  text-shadow: 0 0 calc(var(--danger) * 18px) rgba(192, 37, 37, calc(var(--danger) * 0.85));
+}
+
+.hud .stat.grim b {
+  animation: heavy 2.2s ease-in-out infinite;
+}
+
+.hud .alive b {
+  color: #7fae7a;
+}
+
+@media (max-height: 430px) {
+  .hud {
+    gap: 15px;
+    top: calc(29px + env(safe-area-inset-top));
+  }
+  .hud .stat b {
+    font-size: 15px;
+  }
+  .hud .stat span {
+    font-size: 7px;
+    letter-spacing: 0.14em;
+  }
+}

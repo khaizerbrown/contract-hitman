@@ -1743,3 +1743,127 @@ button.quiet {
     max-height: 64px;
   }
 }
+
+/* ========================================================================
+   Corrections after seeing it on a real screen.
+   ======================================================================== */
+
+/* The table was filling whatever height it was given, so on a tall window it
+   stretched into a huge empty ring. It now keeps the shape of a table. */
+.table {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arena {
+  position: relative;
+  width: 100%;
+  height: min(100%, 360px);
+  max-width: 1000px;
+}
+
+.table::before {
+  width: min(74vw, 760px);
+  height: min(300px, 74%);
+  top: 50%;
+  background: radial-gradient(closest-side, rgba(64, 51, 35, 0.5), rgba(30, 24, 18, 0) 74%);
+}
+
+/* the pile deserves to be the centre of attention */
+#match .deck {
+  padding: 15px 20px;
+  min-width: 120px;
+}
+
+#match .hitmenLeft {
+  font-size: calc(40px + var(--danger) * 22px);
+}
+
+.discard,
+.discard .card {
+  width: 78px;
+  height: 106px;
+}
+
+/* --- seats read as people, not boxes --- */
+
+.opp .who {
+  width: 22px;
+  height: 22px;
+  margin: 0 auto 3px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  color: var(--paper);
+  background: #2c2419;
+  border: 1px solid #4d3f2d;
+}
+
+.opp.current .who {
+  border-color: var(--brass);
+  color: var(--brass);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.16);
+}
+
+.opp.dead .who {
+  color: var(--blood-bright);
+  border-color: var(--blood);
+}
+
+.opponents.tiny .opp .who {
+  width: 18px;
+  height: 18px;
+  font-size: 9px;
+}
+
+/* --- the hand --- */
+
+/*
+ * These cards overlap, so they must never be see-through: a transparent card
+ * lets the one behind it print straight through the wording. Dim them by
+ * darkening the paper instead, and they stay solid and readable.
+ */
+#match .hand .card.disabled {
+  opacity: 1;
+  filter: brightness(0.72) saturate(0.6);
+}
+
+#match .hand .card.dimmed {
+  opacity: 1;
+  filter: brightness(0.42) saturate(0.15);
+  transform: scale(0.97);
+}
+
+#match .hand .card.locked {
+  opacity: 1;
+  filter: brightness(0.5) grayscale(0.85);
+}
+
+#match .hand .card {
+  margin-right: var(--fan, -18px);
+}
+
+/* When the fan has to tuck up tight, the wording goes and the mark speaks. */
+#match .hand.tight .card .cblurb {
+  display: none;
+}
+
+#match .hand.tight .card .cfoot {
+  gap: 0;
+}
+
+#match .hand.tight .card .cname {
+  font-size: 11px;
+}
+
+/* the log should whisper */
+#match .log {
+  scrollbar-width: none;
+}
+
+#match .log::-webkit-scrollbar {
+  display: none;
+}

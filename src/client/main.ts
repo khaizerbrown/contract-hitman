@@ -558,11 +558,9 @@ function seatPosition(
   const rawLeft = 6 + t * 88;
   const left = Math.min(Math.max(rawLeft, halfW), 100 - halfW);
 
-  // A slight stagger on a busy table so neighbours cannot touch.
-  const stagger = total > 5 && index % 2 === 1 ? 6 : 0;
-  const seatH = seatW < 80 ? 52 : 63;
-  const halfH = ((seatH / 2 + 30) / Math.max(1, tableH)) * 100; // 30 clears the top bar
-  const rawTop = 50 - 38 * Math.sin(Math.PI * t) + stagger;
+  const seatH = seatW < 80 ? 58 : 70;
+  const halfH = ((seatH / 2 + 6) / Math.max(1, tableH)) * 100;
+  const rawTop = 50 - 40 * Math.sin(Math.PI * t);
   return { left, top: Math.max(rawTop, halfH) };
 }
 
@@ -598,6 +596,7 @@ function renderOpponents(v: MatchView): void {
                    style="left:${left}%;top:${top}%">
         ${extra}
         <div class="fan">${fan}</div>
+        <div class="who">${p.name.slice(0, 1)}</div>
         <div class="name">${p.name}</div>
         <div class="cards">${state}</div>
       </div>`;
@@ -832,6 +831,7 @@ function cardHtml(v: MatchView, card: { id: string; type: CardType }, playable: 
 
 function renderHand(v: MatchView): void {
   const hand = v.you?.hand ?? [];
+  layOutFan(hand.length);
   $('handLabel').textContent = !v.you?.alive
     ? 'YOU ARE OUT — WATCHING'
     : inReactWindow(v)
@@ -840,6 +840,27 @@ function renderHand(v: MatchView): void {
   $('hand').innerHTML = hand.length
     ? hand.map((c) => cardHtml(v, c, canPlay(v, c.type))).join('')
     : '<div class="empty">Nothing in hand.</div>';
+}
+
+/**
+ * Cards only overlap as much as they have to. A small hand is laid out in full;
+ * a big one tucks up and drops the wording, leaving the mark and the name.
+ */
+function layOutFan(count: number): void {
+  const el = $('hand');
+  if (count === 0) {
+    el.classList.remove('tight');
+    return;
+  }
+  const cardW = window.innerHeight <= 430 ? 66 : 78;
+  const room = Math.max(200, el.clientWidth - 28);
+  const needed = count * cardW;
+  // Negative margin, shared across the gaps between cards.
+  // Always a slight tuck so it reads as a hand, and more only when it must.
+  const crush = needed <= room ? 0 : (needed - room) / Math.max(1, count - 1);
+  const overlap = Math.max(14, Math.min(cardW - 26, crush));
+  el.style.setProperty('--fan', `${-Math.round(overlap)}px`);
+  el.classList.toggle('tight', overlap > cardW * 0.34);
 }
 
 function renderActions(v: MatchView): void {

@@ -93,20 +93,25 @@
           <button id="leaveMatchBtn" class="leaveBtn">LEAVE</button>
         </header>
 
-        <div class="opponents" id="opponents"></div>
+        <div class="table">
+          <div class="opponents" id="opponents"></div>
 
-        <div class="centre">
-          <div class="deck" id="deck">
-            <div class="deckInner">
-              <div class="hitmenLeft" id="hitmenLeft">0</div>
-              <div class="hitmenLabel">HITMEN STILL IN THE DECK</div>
-              <div class="deckCount" id="deckCount"></div>
+          <div class="centre">
+            <div class="pile">
+              <div class="deck" id="deck">
+                <div class="deckInner">
+                  <div class="hitmenLeft" id="hitmenLeft">0</div>
+                  <div class="hitmenLabel">HITMEN LEFT</div>
+                </div>
+              </div>
+              <div class="discard" id="discard"></div>
             </div>
+            <div class="deckCount" id="deckCount"></div>
           </div>
-          <div class="statusStrip" id="statusStrip"></div>
-        </div>
 
-        <div class="log" id="log"></div>
+          <div class="statusStrip" id="statusStrip"></div>
+          <div class="log" id="log"></div>
+        </div>
 
         <div class="handwrap">
           <div class="peekStrip hidden" id="peekStrip"></div>
@@ -123,6 +128,14 @@
         <div id="netBanner" class="netBanner hidden"></div>
         <div id="moments" class="moments" aria-live="polite"></div>
       </section>
+    </div>
+
+    <div id="rotate" class="rotate">
+      <div class="rotateInner">
+        <div class="rotateIcon">&#8635;</div>
+        <div class="rotateName">CONTRACT <span>//</span> HITMAN</div>
+        <p>Turn your phone sideways to play.</p>
+      </div>
     </div>
 
     <script type="module" src="/src/client/main.ts"></script>

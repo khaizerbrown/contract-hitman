@@ -1300,3 +1300,446 @@ button.quiet {
     min-width: 76px;
   }
 }
+
+/* ========================================================================
+   THE TABLE - landscape layout
+
+   Everything below overrides the earlier stacked layout. The match screen is
+   a table you sit at: opponents around the far edge, the deck in the middle,
+   your hand fanned across the bottom.
+   ======================================================================== */
+
+#app:has(#match:not(.hidden)) {
+  max-width: none;
+}
+
+#match:not(.hidden) {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(58% 62% at 50% 40%, #241d16 0%, #14110e 62%, #0d0b09 100%);
+}
+
+#match .topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  border-bottom: none;
+  padding: 6px 12px;
+  padding-top: calc(6px + env(safe-area-inset-top));
+  padding-left: calc(12px + env(safe-area-inset-left));
+  padding-right: calc(12px + env(safe-area-inset-right));
+  background: linear-gradient(180deg, rgba(8, 7, 6, 0.9), transparent);
+}
+
+.table {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+/* the felt */
+.table::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(78vw, 900px);
+  height: min(62vh, 460px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(60, 48, 34, 0.55), rgba(30, 24, 18, 0) 72%);
+  border: 1px solid rgba(201, 162, 39, 0.09);
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------- the other seats */
+
+.opponents {
+  position: absolute;
+  inset: 0;
+  display: block;
+  padding: 0;
+  overflow: visible;
+}
+
+.opponents .opp {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  min-width: 0;
+  width: var(--seatW, 92px);
+  padding: 5px 7px 6px;
+  background: rgba(19, 16, 12, 0.9);
+  text-align: center;
+}
+
+.opponents .opp .name {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.opponents .opp .cards {
+  font-size: 9.5px;
+  margin-top: 1px;
+}
+
+.opp .fan {
+  display: flex;
+  justify-content: center;
+  height: 20px;
+  margin-bottom: 3px;
+}
+
+.opp .fan i {
+  display: block;
+  width: 11px;
+  height: 17px;
+  margin: 0 -3px;
+  border-radius: 2px;
+  background: linear-gradient(150deg, #3a2f22, #241c14);
+  border: 1px solid #4d3f2d;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.opp.dead .fan {
+  opacity: 0.25;
+}
+
+.opp .extra {
+  top: -8px;
+  right: -4px;
+  font-size: 8px;
+}
+
+/* seats get tighter the fuller the table */
+.opponents.crowded .opp {
+  padding: 4px 4px 5px;
+}
+
+.opponents.tiny .opp .cards {
+  display: none;
+}
+
+.opponents.tiny .opp .name {
+  font-size: 8.5px;
+  letter-spacing: 0.04em;
+}
+
+.opponents.crowded .opp .name {
+  font-size: 9.5px;
+}
+
+.opponents.crowded .opp .cards {
+  font-size: 8.5px;
+}
+
+.opponents.crowded .opp .fan {
+  height: 14px;
+}
+
+.opponents.crowded .opp .fan i {
+  width: 8px;
+  height: 12px;
+}
+
+/* ------------------------------------------------------------- the middle */
+
+.centre {
+  position: absolute;
+  left: 50%;
+  top: 57%;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  text-align: center;
+  z-index: 2;
+}
+
+.pile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+#match .deck {
+  padding: 12px 16px;
+  min-width: 108px;
+}
+
+.hitmenLabel {
+  font-size: 8px;
+  letter-spacing: 0.16em;
+}
+
+#match .hitmenLeft {
+  font-size: calc(34px + var(--danger) * 20px);
+}
+
+#match .deckCount {
+  margin-top: 10px;
+  font-size: 10px;
+}
+
+.discard {
+  width: 68px;
+  height: 92px;
+  border-radius: 4px;
+  border: 1px dashed rgba(201, 162, 39, 0.22);
+  display: grid;
+  place-items: center;
+  color: #5d574c;
+  font-family: 'Oswald', sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+}
+
+.discard .card {
+  width: 68px;
+  height: 92px;
+  cursor: default;
+  transform: rotate(-3deg);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.55);
+}
+
+.discard .card .cblurb,
+.discard .card .ctag {
+  display: none;
+}
+
+.discard .card .cmark svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* ------------------------------------------------- log and status, tucked in */
+
+#match .statusStrip {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: 92%;
+  z-index: 3;
+}
+
+#match .log {
+  position: absolute;
+  left: calc(10px + env(safe-area-inset-left));
+  bottom: 4px;
+  width: min(30%, 250px);
+  max-height: 92px;
+  min-height: 0;
+  padding: 0;
+  font-size: 10.5px;
+  line-height: 1.55;
+  opacity: 0.75;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 34%);
+  mask-image: linear-gradient(180deg, transparent, #000 34%);
+}
+
+/* ------------------------------------------------------------- your hand */
+
+#match .handwrap {
+  border-top: none;
+  background: linear-gradient(180deg, transparent, rgba(8, 7, 6, 0.86) 42%);
+  padding: 0 0 calc(6px + env(safe-area-inset-bottom));
+  position: relative;
+  z-index: 4;
+}
+
+#match .handLabel {
+  display: none;
+}
+
+#match .hand {
+  justify-content: center;
+  align-items: flex-end;
+  gap: 0;
+  padding: 6px 14px 4px;
+  min-height: 118px;
+}
+
+/* the fan */
+#match .hand .card {
+  width: 78px;
+  height: 106px;
+  margin-right: -22px;
+  transform-origin: 50% 120%;
+  box-shadow: -3px 6px 12px rgba(0, 0, 0, 0.5);
+}
+
+#match .hand .card:last-child {
+  margin-right: 0;
+}
+
+#match .hand .card:hover:not(.disabled):not(.locked):not(.dimmed) {
+  transform: translateY(-10px);
+  z-index: 3;
+}
+
+#match .hand .card.selected,
+#match .hand .card.hot {
+  z-index: 4;
+}
+
+#match .hand .card .cblurb {
+  font-size: 8px;
+  line-height: 1.25;
+}
+
+#match .hand .card .cmark svg {
+  width: 26px;
+  height: 26px;
+}
+
+#match .actions {
+  position: absolute;
+  right: calc(14px + env(safe-area-inset-right));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  width: auto;
+  padding: 0;
+  z-index: 5;
+}
+
+#match .actions button {
+  min-width: 128px;
+  border-radius: 999px;
+  padding: 13px 18px;
+  font-size: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* the strips sit above the fan, out of the way of the table */
+#match .peekStrip,
+#match .reactStrip {
+  position: absolute;
+  bottom: calc(124px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(360px, 82vw);
+  margin: 0;
+  z-index: 6;
+}
+
+/* ---------------------------------------------------- turn the phone round */
+
+.rotate {
+  display: none;
+}
+
+@media (orientation: portrait) and (max-width: 820px) {
+  .rotate {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: grid;
+    place-items: center;
+    background: var(--ink);
+    text-align: center;
+    padding: 30px;
+  }
+
+  .rotateIcon {
+    font-size: 52px;
+    color: var(--brass);
+    animation: turnover 2.4s ease-in-out infinite;
+  }
+
+  .rotateName {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: 0.12em;
+    margin-top: 16px;
+  }
+
+  .rotateName span {
+    color: var(--blood-bright);
+  }
+
+  .rotate p {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 8px;
+  }
+
+  @keyframes turnover {
+    50% {
+      transform: rotate(90deg);
+    }
+  }
+}
+
+/* A phone held sideways is short. Everything gives up a little height so the
+   seats, the pile and the fan all get their own band of the screen. */
+@media (max-height: 430px) {
+  #match .hand {
+    min-height: 96px;
+    padding: 4px 14px 2px;
+  }
+
+  #match .hand .card {
+    width: 66px;
+    height: 90px;
+    margin-right: -19px;
+  }
+
+  #match .hand .card .cmark svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  #match .hand .card .cblurb {
+    display: none;
+  }
+
+  #match .deck {
+    padding: 8px 13px;
+    min-width: 92px;
+  }
+
+  #match .hitmenLeft {
+    font-size: calc(27px + var(--danger) * 15px);
+  }
+
+  .discard,
+  .discard .card {
+    width: 56px;
+    height: 76px;
+  }
+
+  .discard .card .cmark svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  #match .deckCount {
+    margin-top: 6px;
+    font-size: 9px;
+  }
+
+  .pile {
+    gap: 12px;
+  }
+
+  #match .actions button {
+    min-width: 108px;
+    padding: 11px 14px;
+    font-size: 11px;
+  }
+
+  #match .peekStrip,
+  #match .reactStrip {
+    bottom: calc(100px + env(safe-area-inset-bottom));
+    padding: 6px 9px;
+  }
+
+  #match .log {
+    max-height: 64px;
+  }
+}

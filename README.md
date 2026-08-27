@@ -36,6 +36,13 @@ player - identity is stored per tab, not per browser, exactly so this works.
 
 ## The look and the noise
 
+The match screen is a table seen from your seat: the other players sit around
+the far edge with a fan of face-down cards each, the deck and the discard pile
+sit in the middle, and your own hand is fanned across the bottom with the action
+button to hand. Seats are sized and placed from the space actually available, so
+two players and twelve both fit without anyone overlapping the pile or falling
+off an edge.
+
 Every card carries a drawn mark, a case-file number, and a tint by family, over
 a paper grain. The deck is a stack of leaves that thins as it empties, and once
 the Hitman density climbs the pile shifts and the counter starts to breathe.

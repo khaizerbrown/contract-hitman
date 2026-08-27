@@ -368,6 +368,7 @@ function signature(v: MatchView): string {
       (v.pending as { responded?: string[] }).responded,
     ],
     v.log.length,
+    v.lastPlayedType,
     v.privateInfo.length,
     armedCard?.id ?? null,
     peeksDismissed,
@@ -466,6 +467,7 @@ function render(v: MatchView): void {
 
   renderOpponents(v);
   renderDeck(v);
+  renderDiscard(v);
   renderStatus(v);
   renderLog(v);
   renderPeek(v);
@@ -535,11 +537,51 @@ function renderReactStrip(v: MatchView): void {
     <div class="reactBar"><i></i></div>`;
 }
 
+/**
+ * Seats the other players around the far edge of the table, left to right, on
+ * an arc. One opponent sits dead ahead; a full table curves round the sides.
+ */
+/**
+ * Seats are laid out from the actual size of the table, not from guessed
+ * numbers: a narrow phone with eleven opponents needs smaller seats than a
+ * tablet with two. Positions are clamped so nobody hangs off an edge.
+ */
+function seatPosition(
+  index: number,
+  total: number,
+  seatW: number,
+  tableW: number,
+  tableH: number,
+): { left: number; top: number } {
+  const t = total === 1 ? 0.5 : index / (total - 1);
+  const halfW = ((seatW / 2 + 4) / Math.max(1, tableW)) * 100;
+  const rawLeft = 6 + t * 88;
+  const left = Math.min(Math.max(rawLeft, halfW), 100 - halfW);
+
+  // A slight stagger on a busy table so neighbours cannot touch.
+  const stagger = total > 5 && index % 2 === 1 ? 6 : 0;
+  const seatH = seatW < 80 ? 52 : 63;
+  const halfH = ((seatH / 2 + 30) / Math.max(1, tableH)) * 100; // 30 clears the top bar
+  const rawTop = 50 - 38 * Math.sin(Math.PI * t) + stagger;
+  return { left, top: Math.max(rawTop, halfH) };
+}
+
 function renderOpponents(v: MatchView): void {
   const targeting = armedCard !== null && CARD_INFO[armedCard.type].needsTarget;
-  $('opponents').innerHTML = v.players
-    .filter((p) => p.id !== meId())
-    .map((p) => {
+  const others = v.players.filter((p) => p.id !== meId());
+  const seats = $('opponents');
+  const tableW = seats.clientWidth || window.innerWidth;
+  const tableH = seats.clientHeight || window.innerHeight;
+
+  // Give every seat as much room as the table can actually spare.
+  const seatW = Math.max(44, Math.min(92, Math.floor((tableW * 0.94) / others.length) - 6));
+  const backs = Math.max(1, Math.min(7, Math.floor(seatW / 13)));
+  seats.style.setProperty('--seatW', `${seatW}px`);
+  seats.classList.toggle('crowded', seatW < 80);
+  seats.classList.toggle('tiny', seatW < 58);
+
+  seats.innerHTML = others
+    .map((p, i) => {
       const classes = ['opp'];
       if (!p.alive) classes.push('dead');
       if (p.id === v.currentPlayerId) classes.push('current');
@@ -549,13 +591,32 @@ function renderOpponents(v: MatchView): void {
           ? `<div class="extra">+${p.extraTurns} TURN${p.extraTurns === 1 ? '' : 'S'}</div>`
           : '';
       const state = !p.alive ? 'ELIMINATED' : p.connected ? `${p.handCount} cards` : 'SIGNAL LOST';
-      return `<div class="${classes.join(' ')}" data-target="${p.id}">
+      // A card back for each card they hold, up to a fan that still reads.
+      const fan = Array.from({ length: Math.min(p.handCount, backs) }, () => '<i></i>').join('');
+      const { left, top } = seatPosition(i, others.length, seatW, tableW, tableH);
+      return `<div class="${classes.join(' ')}" data-target="${p.id}"
+                   style="left:${left}%;top:${top}%">
         ${extra}
+        <div class="fan">${fan}</div>
         <div class="name">${p.name}</div>
         <div class="cards">${state}</div>
       </div>`;
     })
     .join('');
+}
+
+/** The pile beside the deck: whatever was played last, face up. */
+function renderDiscard(v: MatchView): void {
+  const el = $('discard');
+  const top = v.lastPlayedType;
+  if (!top) {
+    el.innerHTML = 'NOTHING<br />PLAYED YET';
+    return;
+  }
+  el.innerHTML = cardHtml(v, { id: 'discard-top', type: top }, false).replace(
+    'data-card-id="discard-top"',
+    'data-discard="1"',
+  );
 }
 
 /** How full the deck looked when the match began, so it can be seen shrinking. */
@@ -572,7 +633,7 @@ function renderDeck(v: MatchView): void {
 
   $('hitmenLeft').textContent = String(v.hitmenRemaining);
   $('deckCount').textContent =
-    v.deckCount === 1 ? '1 card left in the deck' : `${v.deckCount} cards left in the deck`;
+    v.deckCount === 1 ? '1 card left' : `${v.deckCount} cards left`;
   $('deck').classList.toggle('thin', left < 0.35);
   $('deck').classList.toggle('grim', density > 0.18);
 }

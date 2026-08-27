@@ -13,6 +13,7 @@ import {
   type Pending,
   type PlayArgs,
   type Player,
+  type Placement,
   type PrivateInfo,
   type StackEntry,
 } from './types.js';
@@ -877,19 +878,42 @@ export class Game {
     throw new GameError('There is nothing to choose right now.');
   }
 
-  private placeHitman(playerId: string, where: 'top' | 'middle' | 'bottom'): void {
+  /**
+   * Where the Hitman goes back. Named spots, a random slot, or an exact position
+   * counted from the top - "17th" is a real answer.
+   */
+  private placeHitman(playerId: string, where: string): void {
     const s = this.state;
     const hitman = s.pendingHitman;
     if (!hitman) throw new GameError('No Hitman card is waiting to be placed.');
-    const spot: 'top' | 'middle' | 'bottom' =
-      where === 'top' || where === 'bottom' ? where : 'middle';
 
-    if (spot === 'top') s.deck.unshift(hitman);
-    else if (spot === 'bottom') s.deck.push(hitman);
-    else s.deck.splice(Math.floor(s.deck.length / 2), 0, hitman);
+    const slots = s.deck.length; // it can go anywhere from the top to the bottom
+    let index: number;
+    let placement: Placement;
+    let position: number | null = null;
 
+    const asNumber = Number(where);
+    if (where === 'top') {
+      placement = 'top';
+      index = 0;
+    } else if (where === 'bottom') {
+      placement = 'bottom';
+      index = slots;
+    } else if (where === 'random') {
+      placement = 'random';
+      index = randomInt(s, slots + 1);
+    } else if (Number.isFinite(asNumber) && where.trim() !== '') {
+      placement = 'exact';
+      index = Math.min(Math.max(Math.round(asNumber) - 1, 0), slots);
+      position = index + 1;
+    } else {
+      placement = 'middle';
+      index = Math.floor(slots / 2);
+    }
+
+    s.deck.splice(index, 0, hitman);
     s.pendingHitman = null;
-    this.log({ t: 'angel_saved', playerId, placement: spot });
+    this.log({ t: 'angel_saved', playerId, placement, position });
     this.clearPending();
 
     // Surviving a Hitman ends your turn, including any extra turns you were owed.
@@ -1017,6 +1041,18 @@ export class Game {
    * What one client is allowed to know. Eliminated players and spectators get
    * no hands at all. No client ever sees the deck order or another player's cards.
    */
+  /**
+   * The log is public, but one line in it is not. Where a saved player put the
+   * Hitman back is theirs alone - telling the table would throw away the whole
+   * point of the choice. A random placement is a secret even from them.
+   */
+  private redactLogFor(entry: LogEntry, viewerId: string | null): LogEntry {
+    if (entry.t !== 'angel_saved') return entry;
+    if (entry.placement === 'random') return { ...entry, position: null };
+    if (entry.playerId === viewerId) return entry;
+    return { ...entry, placement: null, position: null };
+  }
+
   viewFor(viewerId: string | null) {
     const s = this.state;
     const me = viewerId ? s.players.find((p) => p.id === viewerId) ?? null : null;
@@ -1082,7 +1118,7 @@ export class Game {
       drawFromBottom: s.drawFromBottom,
       now: s.now,
       privateInfo: viewerId ? s.privateInfo[viewerId] ?? [] : [],
-      log: s.log,
+      log: s.log.map((e) => this.redactLogFor(e, viewerId)),
     };
   }
 }

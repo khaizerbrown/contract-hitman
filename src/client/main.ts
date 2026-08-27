@@ -28,6 +28,9 @@ let armedCard: { id: string; type: CardType } | null = null;
 let lastSignature = '';
 /** How many Peek results have been read and waved away. */
 let peeksDismissed = 0;
+/** Walking out mid-match forfeits, so it takes two taps. */
+let leaveArmed = false;
+let leaveTimer: number | undefined;
 let toastTimer: number | undefined;
 
 const net = new Net();
@@ -87,7 +90,9 @@ function goOnline(what: 'create' | { join: string }): void {
   online = true;
   sessionStorage.setItem('hitman.name', typedName());
   $('netStatus').textContent = 'Connecting…';
-  if (net.playerId) {
+  // Having a player id is not the same as having a live socket - a dropped or
+  // abandoned connection leaves the id behind. Ask the socket itself.
+  if (net.isConnected) {
     actOnIntent();
   } else {
     net.connect(typedName());
@@ -96,8 +101,16 @@ function goOnline(what: 'create' | { join: string }): void {
 
 function actOnIntent(): void {
   if (!intent) return;
-  if (intent === 'create') net.send({ t: 'createRoom' });
-  else net.send({ t: 'joinRoom', code: intent.join });
+  const sent =
+    intent === 'create'
+      ? net.send({ t: 'createRoom' })
+      : net.send({ t: 'joinRoom', code: intent.join });
+  if (!sent) {
+    // Never fail in silence. Say so and try the connection again.
+    $('netStatus').textContent = 'Lost the connection. Trying again…';
+    net.connect(typedName());
+    return;
+  }
   intent = null;
 }
 
@@ -194,6 +207,33 @@ $('addBotBtn').addEventListener('click', () => net.send({ t: 'addBot' }));
 $('startMatchBtn').addEventListener('click', () => net.send({ t: 'startMatch' }));
 $('leaveRoomBtn').addEventListener('click', () => net.send({ t: 'leaveRoom' }));
 
+$('leaveMatchBtn').addEventListener('click', () => {
+  const btn = $('leaveMatchBtn');
+  if (!leaveArmed) {
+    leaveArmed = true;
+    btn.classList.add('armed');
+    btn.textContent = 'FORFEIT?';
+    window.clearTimeout(leaveTimer);
+    leaveTimer = window.setTimeout(() => {
+      leaveArmed = false;
+      btn.classList.remove('armed');
+      btn.textContent = 'LEAVE';
+    }, 4000);
+    return;
+  }
+  window.clearTimeout(leaveTimer);
+  leaveArmed = false;
+  btn.classList.remove('armed');
+  btn.textContent = 'LEAVE';
+  if (online) {
+    net.send({ t: 'leaveRoom' });
+  } else {
+    driver = null;
+    armedCard = null;
+    showScreen('setup');
+  }
+});
+
 $('copyCode').addEventListener('click', () => {
   const code = $('roomCode').textContent ?? '';
   const link = `${location.origin}/?room=${code}`;
@@ -223,12 +263,13 @@ if (sessionStorage.getItem('hitman.token') && returningName) {
   net.connect(returningName);
   // If nothing comes back, that table has broken up. Say so and let go of it.
   window.setTimeout(() => {
-    if (net.room) return;
+    // Leave it alone if it found the table, or if the player is now using this
+    // connection to create or join one.
+    if (net.room || intent) return;
     online = false;
     sessionStorage.removeItem('hitman.name');
-    net.disconnect();
-    $('netStatus').textContent = 'That table has closed. Start a new one.';
-  }, 3000);
+    $('netStatus').textContent = 'That table has closed. Create or join one.';
+  }, 4000);
 }
 
 // ============================================================== the main loop
@@ -515,11 +556,17 @@ function describe(v: MatchView, e: LogEntry): { text: string; cls: string } {
       };
     case 'angel_burned':
       return { text: `${n(e.playerId)}'s Angel is burned off the table`, cls: 'hit' };
-    case 'angel_saved':
-      return {
-        text: `An Angel takes the bullet for ${n(e.playerId)} &mdash; Hitman goes ${e.placement}`,
-        cls: 'good',
-      };
+    case 'angel_saved': {
+      const where =
+        e.placement === null
+          ? 'the Hitman goes back into the deck'
+          : e.placement === 'random'
+            ? 'the Hitman goes back at random'
+            : e.placement === 'exact'
+              ? `you slid the Hitman in at ${e.position}`
+              : `you put the Hitman ${e.placement === 'middle' ? 'in the middle' : `at the ${e.placement}`}`;
+      return { text: `An Angel takes the bullet for ${n(e.playerId)} &mdash; ${where}`, cls: 'good' };
+    }
     case 'eliminated':
       return { text: `${n(e.playerId)} is eliminated`, cls: 'hit' };
     case 'skipped':
@@ -714,14 +761,24 @@ function renderOverlay(v: MatchView): void {
 
   if (p && p.kind === 'hitmanPlacement' && (p as { playerId: string }).playerId === meId()) {
     ov.className = 'overlay';
+    const slots = v.deckCount + 1;
     ov.innerHTML = `<div class="panel">
       <h2>YOUR ANGEL TOOK THE BULLET</h2>
-      <p>The Hitman goes back into the deck. You decide where. Top means the next
-      player draws it. Bottom buries it for a long time.</p>
+      <p>The Hitman goes back into the deck and you decide where.
+      <b>Nobody else is told.</b> Top means the next player draws it. Bottom buries
+      it. Random is a secret even from you.</p>
       <div class="row">
         <button data-place="top">TOP</button>
         <button data-place="middle">MIDDLE</button>
         <button data-place="bottom">BOTTOM</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button data-place="random">SOMEWHERE RANDOM</button>
+      </div>
+      <div class="slotPick">
+        <label for="slotRange">OR PICK THE EXACT SLOT &mdash; <b id="slotLabel">1</b> of ${slots}</label>
+        <input id="slotRange" type="range" min="1" max="${slots}" value="1" />
+        <button id="slotGo" class="primary">SLIDE IT IN THERE</button>
       </div>
     </div>`;
     return;
@@ -750,9 +807,14 @@ function attempt(fn: () => void): void {
   lastSignature = '';
 }
 
+document.addEventListener('input', (ev) => {
+  const el = ev.target as HTMLInputElement;
+  if (el?.id === 'slotRange') $('slotLabel').textContent = el.value;
+});
+
 document.addEventListener('click', (ev) => {
   const el = (ev.target as HTMLElement).closest<HTMLElement>(
-    '[data-card-id],[data-target],[data-place],[data-give],[data-kick],#drawBtn,#passBtn,#againBtn,#cancelArm,#dismissPeek',
+    '[data-card-id],[data-target],[data-place],[data-give],[data-kick],#drawBtn,#passBtn,#againBtn,#cancelArm,#dismissPeek,#slotGo',
   );
   if (!el) return;
 
@@ -789,6 +851,11 @@ document.addEventListener('click', (ev) => {
 
   const place = el.getAttribute('data-place');
   if (place) return attempt(() => driver!.choose(place));
+
+  if (el.id === 'slotGo') {
+    const slot = $<HTMLInputElement>('slotRange').value;
+    return attempt(() => driver!.choose(slot));
+  }
 
   const target = el.getAttribute('data-target');
   if (target && armedCard && CARD_INFO[armedCard.type].needsTarget) {

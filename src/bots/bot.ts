@@ -147,8 +147,15 @@ export class Bot {
   /** An Angel just saved this bot: decide where the Hitman goes back. */
   chooseHitmanPlacement(game: Game): void {
     const roll = Math.random();
-    const where = roll < 0.55 ? 'top' : roll < 0.85 ? 'bottom' : 'middle';
-    game.choose(this.id, where);
+    // Mostly straight onto the next player, sometimes buried, occasionally an
+    // exact slot a few cards down so nobody can read the pattern.
+    if (roll < 0.45) return game.choose(this.id, 'top');
+    if (roll < 0.7) return game.choose(this.id, 'bottom');
+    if (roll < 0.85) {
+      const deck = game.viewFor(this.id).deckCount;
+      return game.choose(this.id, String(2 + Math.floor(Math.random() * Math.max(1, Math.min(6, deck)))));
+    }
+    return game.choose(this.id, roll < 0.93 ? 'random' : 'middle');
   }
 
   // -------------------------------------------------------------- internals

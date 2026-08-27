@@ -79,8 +79,9 @@ Hitman cards are never seeded in the top 40% of the deck, so a match opens safe
 and turns lethal as the deck thins.
 
 Other current settings: 15-second turn clock, 3.5-second quick-card window,
-5-second choice prompts, 4 dealt cards plus 1 free Angel, 45-second disconnect
-grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
+4 dealt cards plus 1 free Angel, 45-second disconnect
+grace, 7-second choice prompts, response chains capped at 3, hand ceiling 20,
+maximum 12 players.
 
 **These are first guesses and will change after real people play.**
 
@@ -104,6 +105,9 @@ grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
   - **Lock can ban Angel.** While it is banned, anyone who draws a Hitman simply
     dies, Angel in hand or not.
   - Angels stack: hold three, survive three Hitmen.
+  - **Where the Hitman goes back is secret.** The saved player picks top, middle,
+    bottom, an exact slot counted from the top, or somewhere random - and nobody
+    else is ever told which. A random slot is a secret even from them.
 - **Response chains** cap at 3 responses. Cards resolve last-played-first.
 - **Mirror is a card you play on your turn, not a quick card.** It repeats the
   last card anyone played. This means the original card fully resolves on its

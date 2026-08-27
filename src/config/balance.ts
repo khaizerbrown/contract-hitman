@@ -64,7 +64,7 @@ export const BALANCE: Balance = {
 
   turnSeconds: 15,
   quickWindowSeconds: 3.5,
-  choiceSeconds: 5,
+  choiceSeconds: 7,
   disconnectGraceSeconds: 45,
 
   quickChainMaxDepth: 3,

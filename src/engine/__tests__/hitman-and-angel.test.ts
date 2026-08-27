@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from '../game.js';
+import { BALANCE } from '../../config/balance.js';
 import {
   cardOf,
   filler,
@@ -84,9 +85,10 @@ describe('Drawing a Hitman', () => {
   it('puts a Hitman in the middle automatically if the placement timer runs out', () => {
     const g = twoPlayers(['ANGEL'], ['PEEK'], ['HITMAN', ...filler(6)]);
     g.draw('a');
-    g.advance(6000);
+    const wait = BALANCE.choiceSeconds * 1000 + 1000;
+    g.advance(wait);
     g.checkTimers(); // the Angel goes down on its own rather than costing a life
-    g.advance(6000);
+    g.advance(wait);
     g.checkTimers(); // and the Hitman goes back in the middle
     expect(g.state.pending).toBeNull();
     expect(g.state.deck.filter((c) => c.type === 'HITMAN').length).toBe(1);
@@ -95,6 +97,77 @@ describe('Drawing a Hitman', () => {
   it('shows everyone how many Hitman cards are still in the deck', () => {
     const g = twoPlayers(['PEEK'], ['PEEK'], ['PEEK', 'HITMAN', 'HITMAN', ...filler(4)]);
     expect(g.viewFor('b').hitmenRemaining).toBe(2);
+  });
+});
+
+describe('Where the Hitman goes back', () => {
+  function saved() {
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['ANGEL'] },
+        { id: 'b', name: 'B', hand: ['PEEK'] },
+      ],
+      deck: ['HITMAN', ...filler(9)],
+    });
+    g.draw('a');
+    playAngel(g, 'a');
+    return g;
+  }
+
+  it('can go into an exact slot they name', () => {
+    const g = saved();
+    g.choose('a', '4');
+    expect(g.state.deck[3].type).toBe('HITMAN');
+  });
+
+  it('clamps a silly slot rather than losing the card', () => {
+    const g = saved();
+    g.choose('a', '9999');
+    expect(g.state.deck[g.state.deck.length - 1].type).toBe('HITMAN');
+    expect(g.state.deck.filter((c) => c.type === 'HITMAN').length).toBe(1);
+  });
+
+  it('can go somewhere random', () => {
+    const g = saved();
+    g.choose('a', 'random');
+    expect(g.state.deck.filter((c) => c.type === 'HITMAN').length).toBe(1);
+  });
+
+  it('tells the player who chose exactly where it went', () => {
+    const g = saved();
+    g.choose('a', '4');
+    const mine = g.viewFor('a').log.find((e) => e.t === 'angel_saved');
+    expect(mine).toMatchObject({ placement: 'exact', position: 4 });
+  });
+
+  it('tells nobody else, because that is the whole point of the choice', () => {
+    const g = saved();
+    g.choose('a', 'top');
+    const theirs = g.viewFor('b').log.find((e) => e.t === 'angel_saved');
+    expect(theirs).toMatchObject({ placement: null, position: null });
+  });
+
+  it('hides it from a spectator too', () => {
+    const g = saved();
+    g.choose('a', 'bottom');
+    const watching = g.viewFor(null).log.find((e) => e.t === 'angel_saved');
+    expect(watching).toMatchObject({ placement: null, position: null });
+  });
+
+  it('keeps a random slot secret even from the player who chose it', () => {
+    const g = saved();
+    g.choose('a', 'random');
+    for (const viewer of ['a', 'b']) {
+      const seen = g.viewFor(viewer).log.find((e) => e.t === 'angel_saved');
+      expect(seen).toMatchObject({ placement: 'random', position: null });
+    }
+  });
+
+  it('never leaks it through the deck either', () => {
+    const g = saved();
+    g.choose('a', '4');
+    const dump = JSON.stringify(g.viewFor('b'));
+    for (const card of g.state.deck) expect(dump).not.toContain(card.id);
   });
 });
 

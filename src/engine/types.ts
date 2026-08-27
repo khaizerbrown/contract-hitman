@@ -46,6 +46,9 @@ export function publicType(t: CardType): CardType {
   return t === 'FAKE_SHUFFLE' ? 'REAL_SHUFFLE' : t;
 }
 
+/** Where a saved player can put the Hitman back. */
+export type Placement = 'top' | 'middle' | 'bottom' | 'random' | 'exact';
+
 export interface Card {
   id: string;
   type: CardType;
@@ -145,7 +148,17 @@ export type LogEntry =
   | { t: 'hitman_drawn'; playerId: string }
   | { t: 'angel_played'; playerId: string; mirrored: boolean }
   | { t: 'angel_burned'; playerId: string }
-  | { t: 'angel_saved'; playerId: string; placement: 'top' | 'middle' | 'bottom' }
+  | {
+      t: 'angel_saved';
+      playerId: string;
+      /**
+       * Where they put it. Only ever sent to the player who chose - everybody
+       * else gets null, because knowing would ruin the whole decision.
+       */
+      placement: Placement | null;
+      /** 1-based slot from the top, when they named one. Also theirs alone. */
+      position: number | null;
+    }
   | { t: 'eliminated'; playerId: string }
   | { t: 'skipped'; playerId: string }
   | { t: 'timed_out'; playerId: string }

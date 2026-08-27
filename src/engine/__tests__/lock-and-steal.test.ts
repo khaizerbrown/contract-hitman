@@ -155,7 +155,7 @@ describe('Steal', () => {
   it('picks a card for the target if their timer runs out', () => {
     const g = table({ a: ['STEAL'], b: ['PEEK', 'SKIP'] });
     playAndResolve(g, 'a', 'STEAL', { targetPlayerId: 'b' });
-    g.advance(6000);
+    g.advance(BALANCE.choiceSeconds * 1000 + 1000);
     g.checkTimers();
     expect(g.state.pending).toBeNull();
     expect(g.player('a').hand.length).toBe(1);

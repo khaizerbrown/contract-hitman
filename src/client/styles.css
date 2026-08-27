@@ -1015,3 +1015,52 @@ button.quiet {
 .peekCard.danger .pname {
   color: #4a0f0f;
 }
+
+/* --------------------------------------------------- walking out mid-match */
+
+.leaveBtn {
+  flex: 0 0 auto;
+  padding: 7px 9px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: #6b6458;
+  border-color: transparent;
+  background: none;
+}
+
+.leaveBtn.armed {
+  color: #fff;
+  background: var(--blood);
+  border-color: var(--blood);
+}
+
+/* ------------------------------------------- picking a slot for the Hitman */
+
+.slotPick {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
+.slotPick label {
+  display: block;
+  font-family: 'Oswald', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.slotPick label b {
+  color: var(--brass);
+  font-size: 13px;
+}
+
+.slotPick input[type='range'] {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.slotPick button {
+  width: 100%;
+}

@@ -28,6 +28,11 @@ export class Net {
     return this.playerId;
   }
 
+  /** Knowing your player id is not the same as having a live socket. */
+  get isConnected(): boolean {
+    return this.socket?.readyState === 1;
+  }
+
   /**
    * Per-tab, not per-browser. sessionStorage survives a refresh (so a dropped
    * signal puts you back in your seat) but is not shared between tabs, so two
@@ -41,6 +46,7 @@ export class Net {
   connect(name: string): void {
     this.name = name;
     this.wantOpen = true;
+    if (this.socket && this.socket.readyState <= 1) return; // already open or opening
     this.open();
   }
 
@@ -111,8 +117,11 @@ export class Net {
     }
   }
 
-  send(message: ClientMessage): void {
-    if (this.socket?.readyState === 1) this.socket.send(JSON.stringify(message));
+  /** Returns false if there was no live socket to send it down. */
+  send(message: ClientMessage): boolean {
+    if (this.socket?.readyState !== 1) return false;
+    this.socket.send(JSON.stringify(message));
+    return true;
   }
 
   /** The match clock, carried forward locally between server updates. */

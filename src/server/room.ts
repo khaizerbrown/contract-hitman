@@ -61,8 +61,20 @@ export class Room {
     return this.seats.filter((s) => !s.isBot);
   }
 
+  /**
+   * A room is only finished with once nobody is coming back to it.
+   *
+   * While a match is running, a human whose signal has dropped still counts as
+   * present until their grace period runs out. Without this, a table with one
+   * human and some bots is destroyed the moment that person's phone locks.
+   */
   get isEmpty(): boolean {
-    return this.humanSeats.every((s) => s.client === null);
+    const humans = this.humanSeats;
+    if (humans.some((s) => s.client !== null)) return false;
+    if (this.phase !== 'playing') return true;
+    const graceMs = this.balance.disconnectGraceSeconds * 1000;
+    const now = this.now();
+    return !humans.some((s) => s.droppedAt !== null && now - s.droppedAt < graceMs);
   }
 
   info(): RoomInfo {

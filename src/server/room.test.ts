@@ -248,6 +248,38 @@ describe('Losing your connection', () => {
     expect(room.game!.player('g1').alive).toBe(false);
   });
 
+  it('keeps a one-human table alive while their phone is locked', () => {
+    // The case that broke live: one person, the rest bots. Their signal drops.
+    const room = manager.create(host);
+    room.addBot('h1');
+    room.addBot('h1');
+    room.start('h1');
+
+    room.markDisconnected('h1');
+    manager.tick();
+
+    expect(manager.find(room.code)).toBeDefined();
+    expect(room.game!.player('h1').alive).toBe(true);
+
+    const returning = new FakeClient('h1', 'MRK');
+    room.join(returning);
+    expect(returning.lastView()).toBeDefined();
+    expect(room.game!.player('h1').alive).toBe(true);
+  });
+
+  it('lets that table go once the grace period passes with nobody there', () => {
+    const room = manager.create(host);
+    room.addBot('h1');
+    room.start('h1');
+    room.markDisconnected('h1');
+
+    (room as unknown as { startedAt: number }).startedAt =
+      Date.now() - BALANCE.disconnectGraceSeconds * 1000 - 5000;
+    manager.tick();
+
+    expect(manager.find(room.code)).toBeUndefined();
+  });
+
   it('treats walking out mid-match as a forfeit, not a pause', () => {
     const room = startedRoom();
     room.leave('g1');

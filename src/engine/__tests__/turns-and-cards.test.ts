@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from '../game.js';
+import { BALANCE } from '../../config/balance.js';
 import type { CardType } from '../types.js';
 import { cardOf, filler, handTypes, playAndResolve } from './helpers.js';
 
@@ -45,7 +46,7 @@ describe('The 15-second turn clock', () => {
   it('draws for you and ends your turn when it runs out', () => {
     const g = table({ a: [], b: [] });
     const deckBefore = g.state.deck.length;
-    g.advance(15000);
+    g.advance(BALANCE.turnSeconds * 1000);
     g.checkTimers();
     expect(g.player('a').hand.length).toBe(1);
     expect(g.state.deck.length).toBe(deckBefore - 1);

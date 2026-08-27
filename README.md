@@ -44,7 +44,10 @@ two players and twelve both fit without anyone overlapping the pile or falling
 off an edge.
 
 Every card carries a drawn mark, a case-file number, and a tint by family, over
-a paper grain. The deck is a stack of leaves that thins as it empties, and once
+a paper grain, and no sentences at all - the mark is the card. The two whose
+effect depends on the board, Lock and Mirror, name what they would hit. Across
+the top sit the three numbers the game turns on: the chance the next card is a
+Hitman, how many Hitmen are left, and how many players are still breathing. The deck is a stack of leaves that thins as it empties, and once
 the Hitman density climbs the pile shifts and the counter starts to breathe.
 
 Hitmen, Angels and eliminations get stamped across the screen on their own
@@ -101,7 +104,7 @@ Deck size grows with the player count: `count = base + floor(perExtraPlayer × (
 Hitman cards are never seeded in the top 40% of the deck, so a match opens safe
 and turns lethal as the deck thins.
 
-Other current settings: 15-second turn clock, 3.5-second quick-card window,
+Other current settings: 10-second turn clock, 3.5-second quick-card window,
 4 dealt cards plus 1 free Angel, 45-second disconnect
 grace, 7-second choice prompts, response chains capped at 3, hand ceiling 20,
 maximum 12 players.

@@ -1929,3 +1929,91 @@ button.quiet {
     letter-spacing: 0.14em;
   }
 }
+
+/* ==========================================================================
+   Cards without the wording: the mark carries the meaning, the tint carries
+   the family, and the paper stays paper.
+   ========================================================================== */
+
+.card .cblurb {
+  display: none;
+}
+
+.cmark svg {
+  width: 46px;
+  height: 46px;
+  opacity: 1;
+  stroke-width: 1.5;
+}
+
+#match .hand .card .cmark svg,
+.discard .card .cmark svg {
+  width: 42px;
+  height: 42px;
+}
+
+.card .cname {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.card .ctarget {
+  font-family: 'Oswald', sans-serif;
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  color: #7e7259;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- the families, told apart by the colour of the paper itself --- */
+
+.card.kind-control {
+  background: linear-gradient(160deg, #e7ddc6 0%, #cec0a2 100%);
+  border-color: #ab9d7c;
+}
+
+.card.kind-strike {
+  background: linear-gradient(160deg, #e6cfbb 0%, #c9a288 100%);
+  border-color: #a87f5f;
+}
+
+.card.kind-strike .cmark,
+.card.kind-strike .cname {
+  color: #7a3216;
+}
+
+.card.kind-quick {
+  background: linear-gradient(160deg, #ded4d6 0%, #bda9ab 100%);
+  border-color: #94787a;
+}
+
+.card.kind-quick .cmark,
+.card.kind-quick .cname {
+  color: #6f1717;
+}
+
+.card.kind-saviour {
+  background: linear-gradient(160deg, #f0e6c6 0%, #dbc98d 100%);
+  border-color: var(--brass);
+  box-shadow:
+    0 0 0 1px rgba(201, 162, 39, 0.45),
+    0 6px 14px rgba(0, 0, 0, 0.45);
+}
+
+.card.kind-saviour .cmark,
+.card.kind-saviour .cname {
+  color: #7a5c07;
+}
+
+.card.kind-danger .cmark,
+.card.kind-danger .cname {
+  color: #3d0c0c;
+}
+
+/* the fan never needs to hide anything now, there is nothing to hide */
+#match .hand.tight .card .cname {
+  font-size: 11.5px;
+}

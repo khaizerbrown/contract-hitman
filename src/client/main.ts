@@ -823,7 +823,19 @@ function cardHtml(v: MatchView, card: { id: string; type: CardType }, playable: 
   const tag = info.passive ? 'AUTOMATIC' : info.quick ? 'QUICK' : '';
   classes.push(`kind-${CARD_KIND[card.type]}`);
   const badge = lock ? `LOCKED ${lock.turnsRemaining}` : '';
-  return `<button class="${classes.join(' ')}" data-card-id="${card.id}" data-lockturns="${badge}">
+
+  // The two cards whose effect depends on the board say what they would hit.
+  // Everything else needs no words at all: the mark and the name are the card.
+  let target = '';
+  if (card.type === 'LOCK' || card.type === 'MIRROR') {
+    const t = v.lastPlayedType;
+    const usable = card.type === 'MIRROR' ? canMirror(v) : !!t;
+    if (v.pending?.kind === 'angel' && card.type === 'MIRROR') target = 'THE ANGEL';
+    else target = usable && t ? CARD_INFO[t].name.toUpperCase() : '&mdash;';
+  }
+
+  return `<button class="${classes.join(' ')}" data-card-id="${card.id}"
+    data-lockturns="${badge}" title="${info.name}: ${blurb.replace(/"/g, '')}">
     <div class="cardHead">
       <span class="cno">${CARD_NUMBER[card.type]}</span>
       <span class="ctag">${tag}</span>
@@ -831,7 +843,7 @@ function cardHtml(v: MatchView, card: { id: string; type: CardType }, playable: 
     <div class="cmark">${CARD_MARK[card.type]}</div>
     <div class="cfoot">
       <div class="cname">${info.name}</div>
-      <div class="cblurb">${blurb}</div>
+      ${target ? `<div class="ctarget">&rarr; ${target}</div>` : ''}
     </div>
   </button>`;
 }

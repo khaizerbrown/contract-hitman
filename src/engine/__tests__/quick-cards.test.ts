@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { Game } from '../game.js';
 import type { CardType } from '../types.js';
 import { cardOf, filler, handTypes, passAll, playAndResolve } from './helpers.js';
+import { BALANCE } from '../../config/balance.js';
+
+const WINDOW_MS = BALANCE.quickWindowSeconds * 1000;
 
 function table(hands: Record<string, CardType[]>, deck: CardType[] = filler(20)) {
   return Game.forTest({
@@ -10,7 +13,7 @@ function table(hands: Record<string, CardType[]>, deck: CardType[] = filler(20))
   });
 }
 
-describe('The 2-second reflex window', () => {
+describe('The reflex window', () => {
   it('opens for every other living player when a card is played', () => {
     const g = table({ a: ['ATTACK'], b: ['CANCEL'], c: ['CANCEL'] });
     g.play('a', cardOf(g, 'a', 'ATTACK').id, { targetPlayerId: 'b' });
@@ -25,10 +28,10 @@ describe('The 2-second reflex window', () => {
     expect(g.state.pending).toBeNull();
   });
 
-  it('closes on its own when the 2 seconds run out', () => {
+  it('closes on its own when the window runs out', () => {
     const g = table({ a: ['ATTACK'], b: ['CANCEL'], c: [] });
     g.play('a', cardOf(g, 'a', 'ATTACK').id, { targetPlayerId: 'b' });
-    g.advance(2000);
+    g.advance(WINDOW_MS);
     g.checkTimers();
     expect(g.state.pending).toBeNull();
     expect(g.state.attackEffects.length).toBe(1);
@@ -38,9 +41,9 @@ describe('The 2-second reflex window', () => {
     const g = table({ a: ['ATTACK'], b: ['CANCEL'], c: [] });
     const before = g.state.turnDeadline;
     g.play('a', cardOf(g, 'a', 'ATTACK').id, { targetPlayerId: 'b' });
-    g.advance(2000);
+    g.advance(WINDOW_MS);
     g.checkTimers();
-    expect(g.state.turnDeadline).toBe(before + 2000);
+    expect(g.state.turnDeadline).toBe(before + WINDOW_MS);
   });
 
   it('stops a quick card being played out of turn order', () => {

@@ -78,7 +78,7 @@ Deck size grows with the player count: `count = base + floor(perExtraPlayer × (
 Hitman cards are never seeded in the top 40% of the deck, so a match opens safe
 and turns lethal as the deck thins.
 
-Other current settings: 15-second turn clock, 2-second quick-card window,
+Other current settings: 15-second turn clock, 3.5-second quick-card window,
 5-second choice prompts, 4 dealt cards plus 1 free Angel, 45-second disconnect
 grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
 

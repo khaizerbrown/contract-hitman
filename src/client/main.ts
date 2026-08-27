@@ -322,7 +322,7 @@ function renderIfChanged(): void {
 
 // ================================================================== rendering
 
-/** True while you are inside a live 2-second reflex window. */
+/** True while you are inside a live reflex window. */
 function inReactWindow(v: MatchView): boolean {
   const p = v.pending;
   if (!p || p.kind !== 'quickWindow') return false;
@@ -388,7 +388,7 @@ function renderPeek(v: MatchView): void {
 
 /**
  * The reflex window happens in place, above your hand. It never covers the
- * table - the whole point of the two seconds is seeing who played what on whom.
+ * table - the whole point of the window is seeing who played what on whom.
  */
 function renderReactStrip(v: MatchView): void {
   const strip = $('reactStrip');

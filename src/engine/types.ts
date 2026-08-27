@@ -13,14 +13,14 @@ export type CardType =
   | 'BOTTOM_PULL'
   | 'REAL_SHUFFLE'
   | 'FAKE_SHUFFLE'
-  // Played only inside the 2-second reflex window
+  // Played only inside the reflex window
   | 'CANCEL'
   | 'BURN'
   | 'MIRROR'
   | 'REDIRECT';
 
 /**
- * Cards played inside the 2-second reflex window. Mirror is not one of them -
+ * Cards played inside the reflex window. Mirror is not one of them -
  * it is played on your own turn and repeats whatever was played last.
  */
 export const QUICK_CARDS = ['CANCEL', 'BURN', 'REDIRECT'] as const;

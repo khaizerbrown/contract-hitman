@@ -63,7 +63,7 @@ export const BALANCE: Balance = {
   startingHandSize: 4,
 
   turnSeconds: 15,
-  quickWindowSeconds: 2,
+  quickWindowSeconds: 3.5,
   choiceSeconds: 5,
   disconnectGraceSeconds: 45,
 

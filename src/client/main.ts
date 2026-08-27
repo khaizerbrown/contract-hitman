@@ -1,6 +1,6 @@
 import { LocalMatch } from './localMatch.js';
 import { Net } from './net.js';
-import { CARD_INFO } from './cardInfo.js';
+import { CARD_INFO, CARD_KIND, CARD_MARK, CARD_NUMBER } from './cardInfo.js';
 import { GameError, type MatchView } from '../engine/game.js';
 import { BALANCE } from '../config/balance.js';
 import { buildBaseDeck, hitmanCount } from '../engine/deck.js';
@@ -76,6 +76,7 @@ $('startBtn').addEventListener('click', () => {
   driver = new LocalMatch(typedName(), Number(botSlider.value));
   armedCard = null;
   peeksDismissed = 0;
+  deckAtStart = 0;
   lastSignature = '';
   showScreen('match');
   startLoop();
@@ -155,6 +156,7 @@ net.onRoom = (room) => {
     if (!driver) {
       driver = net;
       lastSignature = '';
+      deckAtStart = 0;
       startLoop();
     }
     showScreen('match');
@@ -475,11 +477,23 @@ function renderOpponents(v: MatchView): void {
     .join('');
 }
 
+/** How full the deck looked when the match began, so it can be seen shrinking. */
+let deckAtStart = 0;
+
 function renderDeck(v: MatchView): void {
   const density = v.deckCount > 0 ? v.hitmenRemaining / v.deckCount : 1;
   document.documentElement.style.setProperty('--danger', String(Math.min(1, density * 3.2)));
+
+  if (v.deckCount > deckAtStart) deckAtStart = v.deckCount;
+  const left = deckAtStart > 0 ? v.deckCount / deckAtStart : 0;
+  // The stack itself thins out. Six leaves of paper at the start, one at the end.
+  document.documentElement.style.setProperty('--stack', String(Math.max(0, Math.round(left * 6))));
+
   $('hitmenLeft').textContent = String(v.hitmenRemaining);
-  $('deckCount').textContent = `${v.deckCount} cards left in the deck`;
+  $('deckCount').textContent =
+    v.deckCount === 1 ? '1 card left in the deck' : `${v.deckCount} cards left in the deck`;
+  $('deck').classList.toggle('thin', left < 0.35);
+  $('deck').classList.toggle('grim', density > 0.18);
 }
 
 function renderStatus(v: MatchView): void {
@@ -659,11 +673,18 @@ function cardHtml(v: MatchView, card: { id: string; type: CardType }, playable: 
   if (armedCard?.id === card.id) classes.push('selected');
 
   const tag = info.passive ? 'AUTOMATIC' : info.quick ? 'QUICK' : '';
+  classes.push(`kind-${CARD_KIND[card.type]}`);
   const badge = lock ? `LOCKED ${lock.turnsRemaining}` : '';
   return `<button class="${classes.join(' ')}" data-card-id="${card.id}" data-lockturns="${badge}">
-    <div class="cname">${info.name}</div>
-    <div class="cblurb">${blurb}</div>
-    <div class="ctag">${tag}</div>
+    <div class="cardHead">
+      <span class="cno">${CARD_NUMBER[card.type]}</span>
+      <span class="ctag">${tag}</span>
+    </div>
+    <div class="cmark">${CARD_MARK[card.type]}</div>
+    <div class="cfoot">
+      <div class="cname">${info.name}</div>
+      <div class="cblurb">${blurb}</div>
+    </div>
   </button>`;
 }
 

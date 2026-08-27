@@ -13,6 +13,7 @@
   --line: #342e27;
 
   --danger: 0;
+  --stack: 6;
 
   color-scheme: dark;
 }
@@ -358,17 +359,40 @@ input[type='range'] {
   display: inline-block;
   padding: 18px 30px;
   border: 1px solid var(--line);
-  background:
-    linear-gradient(180deg, #1c1813, #131110);
+  background: linear-gradient(180deg, #1c1813, #131110);
   border-radius: 4px;
+  /* Every leaf of the stack is a shadow. As --stack falls, the pile thins. */
   box-shadow:
-    4px 4px 0 -1px #17140f,
-    5px 5px 0 -1px var(--line),
-    8px 8px 0 -1px #17140f,
-    9px 9px 0 -1px var(--line);
+    calc(1px * min(var(--stack), 1) * 3) calc(1px * min(var(--stack), 1) * 3) 0 -1px #17140f,
+    calc(1px * min(var(--stack), 1) * 4) calc(1px * min(var(--stack), 1) * 4) 0 -1px var(--line),
+    calc(1px * max(min(var(--stack) - 1, 1), 0) * 7) calc(1px * max(min(var(--stack) - 1, 1), 0) * 7) 0 -1px #17140f,
+    calc(1px * max(min(var(--stack) - 1, 1), 0) * 8) calc(1px * max(min(var(--stack) - 1, 1), 0) * 8) 0 -1px var(--line),
+    calc(1px * max(min(var(--stack) - 3, 1), 0) * 11) calc(1px * max(min(var(--stack) - 3, 1), 0) * 11) 0 -1px #17140f,
+    calc(1px * max(min(var(--stack) - 3, 1), 0) * 12) calc(1px * max(min(var(--stack) - 3, 1), 0) * 12) 0 -1px var(--line);
+  transition: box-shadow 0.5s ease, transform 0.5s ease;
+}
+
+.deck.thin {
+  transform: translate(3px, 3px);
+}
+
+.deck.grim {
+  border-color: rgba(140, 28, 28, 0.55);
+}
+
+/* the counter breathes once the deck turns dangerous */
+.deck.grim .hitmenLeft {
+  animation: heavy 2.6s ease-in-out infinite;
+}
+
+@keyframes heavy {
+  50% {
+    transform: scale(1.045);
+  }
 }
 
 .hitmenLeft {
+  display: inline-block;
   font-family: 'Oswald', sans-serif;
   font-weight: 600;
   line-height: 1;
@@ -543,26 +567,121 @@ input[type='range'] {
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
 }
 
-.card .cname {
-  font-family: 'Oswald', sans-serif;
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.05em;
-  line-height: 1.1;
-  text-transform: uppercase;
+.card::before {
+  /* the grain and the fold of old paper */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 78% 4%, rgba(255, 255, 255, 0.5), transparent 55%),
+    radial-gradient(90% 70% at 8% 100%, rgba(90, 70, 40, 0.16), transparent 60%),
+    repeating-linear-gradient(92deg, rgba(120, 100, 70, 0.05) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+  opacity: 0.85;
 }
 
-.card .cblurb {
-  font-size: 9.5px;
-  line-height: 1.35;
-  color: #5a5245;
+.card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.card .cno {
+  font-family: 'Oswald', sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: #8a7c62;
+  border-bottom: 1px solid rgba(138, 124, 98, 0.5);
+  padding-bottom: 1px;
 }
 
 .card .ctag {
   font-family: 'Oswald', sans-serif;
-  font-size: 8px;
+  font-size: 7.5px;
   letter-spacing: 0.16em;
-  color: #7c705a;
+  color: #9b8c70;
+}
+
+.cmark {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: #5d5847;
+}
+
+.cmark svg {
+  width: 34px;
+  height: 34px;
+  opacity: 0.9;
+}
+
+.cfoot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card .cname {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.card .cblurb {
+  font-size: 9px;
+  line-height: 1.3;
+  color: #6a6153;
+}
+
+/* --- the families, by tint and by the colour of their mark --- */
+
+.card.kind-strike .cmark {
+  color: #8c3a1c;
+}
+
+.card.kind-strike .cname {
+  color: #6d2d16;
+}
+
+.card.kind-control .cmark {
+  color: #5d5847;
+}
+
+.card.kind-quick .cmark {
+  color: #8c1c1c;
+}
+
+.card.kind-quick .cname {
+  color: #7a1a1a;
+}
+
+.card.kind-saviour .cmark {
+  color: #9a7a17;
+}
+
+.card.kind-saviour .cname {
+  color: #7d6210;
+}
+
+.card.kind-danger {
+  background: linear-gradient(160deg, #b58d8d 0%, #8f6060 100%);
+  border-color: #6d3a3a;
+}
+
+.card.kind-danger .cmark,
+.card.kind-danger .cname {
+  color: #3d0c0c;
 }
 
 .card.quick {

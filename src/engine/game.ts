@@ -720,10 +720,17 @@ export class Game {
 
   private runPromptQueue(): void {
     const s = this.state;
-    if (s.pending || s.promptQueue.length === 0) return;
-    const next = s.promptQueue.shift()!;
-    next.deadline = s.now + s.balance.choiceSeconds * 1000;
-    this.setPending(next);
+    if (s.pending) return;
+    while (s.promptQueue.length > 0) {
+      const next = s.promptQueue.shift()!;
+      // Two Steals can be queued against the same player - a Mirror will do it -
+      // and the first one can empty their hand. Do not ask for a card they
+      // cannot give.
+      if (next.kind === 'steal' && this.player(next.playerId).hand.length === 0) continue;
+      next.deadline = s.now + s.balance.choiceSeconds * 1000;
+      this.setPending(next);
+      return;
+    }
   }
 
   /** Runs once nothing is waiting on a player's choice. */
@@ -953,6 +960,13 @@ export class Game {
       const target = this.player(pending.playerId);
       this.log({ t: 'timed_out', playerId: pending.playerId });
       const pick = target.hand[randomInt(s, target.hand.length)];
+      if (!pick) {
+        // Nothing left to hand over. Let the turn carry on rather than stopping.
+        this.clearPending();
+        this.runPromptQueue();
+        this.afterEffects();
+        return;
+      }
       this.giveStolenCard(pending.playerId, pending.thiefId, pick.id);
     }
   }

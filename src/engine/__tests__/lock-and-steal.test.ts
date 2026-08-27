@@ -172,6 +172,55 @@ describe('Steal', () => {
   });
 });
 
+describe('Two Steals against one player', () => {
+  /** A steals from B; C mirrors it. Two Steal prompts, one card to give. */
+  function doubleSteal(bHand: CardType[]) {
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['STEAL'] },
+        { id: 'b', name: 'B', hand: bHand },
+        { id: 'c', name: 'C', hand: ['MIRROR'] },
+      ],
+      deck: filler(10),
+    });
+    g.play('a', cardOf(g, 'a', 'STEAL').id, { targetPlayerId: 'b' });
+    g.play('c', cardOf(g, 'c', 'MIRROR').id);
+    passAll(g);
+    return g;
+  }
+
+  it('does not ask a second time when the first took their last card', () => {
+    const g = doubleSteal(['PEEK']);
+    expect(g.state.pending?.kind).toBe('steal');
+    g.choose('b', cardOf(g, 'b', 'PEEK').id);
+    // Their hand is empty now, so the second Steal simply finds nothing.
+    expect(g.player('b').hand).toEqual([]);
+    expect(g.state.pending).toBeNull();
+  });
+
+  it('does not fall over when that second prompt times out', () => {
+    const g = doubleSteal(['PEEK']);
+    g.choose('b', cardOf(g, 'b', 'PEEK').id);
+    expect(() => {
+      g.advance(10000);
+      g.checkTimers();
+    }).not.toThrow();
+    expect(g.state.phase).toBe('playing');
+  });
+
+  it('still takes two cards when they have two to give', () => {
+    const g = doubleSteal(['PEEK', 'SKIP']);
+    g.choose('b', cardOf(g, 'b', 'PEEK').id);
+    expect(g.state.pending?.kind).toBe('steal');
+    g.choose('b', cardOf(g, 'b', 'SKIP').id);
+    expect(g.player('b').hand).toEqual([]);
+    // The mirrored Steal pays whoever mirrored it, not the original thief, and
+    // it resolves first - so C takes the card B gave up first.
+    expect(handTypes(g, 'c')).toEqual(['PEEK']);
+    expect(handTypes(g, 'a')).toEqual(['SKIP']);
+  });
+});
+
 describe('Mimic', () => {
   it('gives you a copy of their hand and they keep theirs', () => {
     const g = table({ a: ['MIMIC'], b: ['PEEK', 'SKIP'] });

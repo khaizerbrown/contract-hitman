@@ -178,7 +178,18 @@ function requireRoom(client: Client) {
   return room;
 }
 
-setInterval(() => rooms.tick(), TICK_MS);
+setInterval(() => {
+  // A throw in here would reach the timer uncaught and end the process, taking
+  // every live match with it. No single table gets to do that.
+  try {
+    rooms.tick();
+  } catch (err) {
+    console.error('Tick failed:', err);
+  }
+}, TICK_MS);
+
+process.on('uncaughtException', (err) => console.error('Uncaught:', err));
+process.on('unhandledRejection', (err) => console.error('Unhandled rejection:', err));
 
 http.listen(PORT, () => {
   console.log(`CONTRACT // HITMAN server listening on port ${PORT}`);

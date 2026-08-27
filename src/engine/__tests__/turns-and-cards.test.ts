@@ -91,6 +91,27 @@ describe('Peek', () => {
     expect(seen[0].cards.map((c) => c.type)).toEqual(['SKIP', 'MIMIC', 'STEAL']);
     expect(g.viewFor('b').privateInfo).toEqual([]);
   });
+
+  it('records how big the deck was, so a stale look can be hidden', () => {
+    const g = table({ a: ['PEEK'], b: [] }, ['SKIP', 'MIMIC', 'STEAL', 'PEEK']);
+    playAndResolve(g, 'a', 'PEEK');
+    const seen = g.viewFor('a').privateInfo[0];
+    expect(seen.deckCount).toBe(4);
+    expect(seen.deckCount).toBe(g.viewFor('a').deckCount);
+
+    // Once anyone draws, what they saw is no longer the top of the deck.
+    g.draw('a');
+    expect(g.viewFor('a').privateInfo[0].deckCount).not.toBe(g.viewFor('a').deckCount);
+  });
+
+  it('still shows a peek to the player after several looks', () => {
+    const g = table({ a: ['PEEK', 'PEEK'], b: [] }, ['SKIP', 'MIMIC', 'STEAL', 'PEEK', 'LOCK']);
+    playAndResolve(g, 'a', 'PEEK');
+    playAndResolve(g, 'a', 'PEEK');
+    const seen = g.viewFor('a').privateInfo;
+    expect(seen.length).toBe(2);
+    expect(seen[1].cards.map((c) => c.type)).toEqual(['SKIP', 'MIMIC', 'STEAL']);
+  });
 });
 
 describe('Real Shuffle and Fake Shuffle', () => {

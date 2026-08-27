@@ -115,6 +115,9 @@ grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
   If nothing has been played yet, Lock cannot be played. *(This departs from the
   brief, which had the player choose the type. Changed on Mr K's instruction.)*
 - **Bottom Pull** replaces your end-of-turn draw with one from the bottom.
+- **Peek** shows the top three above your hand, marked NEXT / THEN / THEN, with a
+  Hitman among them picked out in red. It disappears the moment anyone draws,
+  because what you saw is no longer the top of the deck.
 - **Every clock freezes** while any player is making a choice.
 - **Steal, Attack, Mimic** cannot target yourself or an eliminated player.
 - **Mimic replaces your hand with a copy of theirs.** Everything you were

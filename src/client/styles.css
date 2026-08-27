@@ -940,3 +940,78 @@ button.quiet {
   padding: 6px;
   z-index: 70;
 }
+
+/* ------------------------------------------------- what Peek showed you */
+
+.peekStrip {
+  margin: 0 12px 10px;
+  border: 1px solid var(--brass-dim);
+  border-left-width: 3px;
+  background: linear-gradient(90deg, rgba(201, 162, 39, 0.16), rgba(201, 162, 39, 0.03));
+  border-radius: 3px;
+  padding: 8px 11px;
+  animation: strikeIn 0.16s ease-out;
+}
+
+.peekStrip .peekHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--brass);
+  margin-bottom: 7px;
+}
+
+.peekStrip .peekHead button {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 15px;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.peekRow {
+  display: flex;
+  gap: 6px;
+}
+
+.peekCard {
+  flex: 1;
+  min-width: 0;
+  background: linear-gradient(160deg, var(--paper) 0%, var(--paper-2) 100%);
+  color: var(--paper-ink);
+  border: 1px solid #b3a684;
+  border-radius: 3px;
+  padding: 6px 7px;
+}
+
+.peekCard.danger {
+  background: linear-gradient(160deg, #d8b1b1 0%, #b98686 100%);
+  border-color: var(--blood);
+}
+
+.peekCard .pos {
+  font-family: 'Oswald', sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: #7c705a;
+}
+
+.peekCard .pname {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 1.15;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.peekCard.danger .pname {
+  color: #4a0f0f;
+}

@@ -26,6 +26,8 @@ let driver: Driver | null = null;
 let online = false;
 let armedCard: { id: string; type: CardType } | null = null;
 let lastSignature = '';
+/** How many Peek results have been read and waved away. */
+let peeksDismissed = 0;
 let toastTimer: number | undefined;
 
 const net = new Net();
@@ -70,6 +72,7 @@ $('startBtn').addEventListener('click', () => {
   online = false;
   driver = new LocalMatch(typedName(), Number(botSlider.value));
   armedCard = null;
+  peeksDismissed = 0;
   lastSignature = '';
   showScreen('match');
   startLoop();
@@ -301,7 +304,9 @@ function signature(v: MatchView): string {
       (v.pending as { responded?: string[] }).responded,
     ],
     v.log.length,
+    v.privateInfo.length,
     armedCard?.id ?? null,
+    peeksDismissed,
   ]);
 }
 
@@ -338,10 +343,46 @@ function render(v: MatchView): void {
   renderDeck(v);
   renderStatus(v);
   renderLog(v);
+  renderPeek(v);
   renderReactStrip(v);
   renderHand(v);
   renderActions(v);
   renderOverlay(v);
+}
+
+/**
+ * What Peek showed you. It stays up until you wave it away, or until somebody
+ * draws - at which point what you saw is no longer the top of the deck.
+ */
+function renderPeek(v: MatchView): void {
+  const strip = $('peekStrip');
+  const latest = v.privateInfo[v.privateInfo.length - 1];
+  const unread = v.privateInfo.length > peeksDismissed;
+  const stillTrue = latest && latest.deckCount === v.deckCount;
+
+  if (!latest || !unread || !stillTrue) {
+    strip.className = 'peekStrip hidden';
+    strip.innerHTML = '';
+    return;
+  }
+
+  const labels = ['NEXT', 'THEN', 'THEN'];
+  strip.className = 'peekStrip';
+  strip.innerHTML = `
+    <div class="peekHead">
+      <span>TOP OF THE DECK &mdash; ONLY YOU SEE THIS</span>
+      <button id="dismissPeek" aria-label="Hide">&times;</button>
+    </div>
+    <div class="peekRow">
+      ${latest.cards
+        .map(
+          (c, i) => `<div class="peekCard ${c.type === 'HITMAN' ? 'danger' : ''}">
+            <div class="pos">${labels[i] ?? ''}</div>
+            <div class="pname">${CARD_INFO[c.type].name}</div>
+          </div>`,
+        )
+        .join('')}
+    </div>`;
 }
 
 /**
@@ -690,7 +731,7 @@ function attempt(fn: () => void): void {
 
 document.addEventListener('click', (ev) => {
   const el = (ev.target as HTMLElement).closest<HTMLElement>(
-    '[data-card-id],[data-target],[data-place],[data-give],[data-kick],#drawBtn,#passBtn,#againBtn,#cancelArm',
+    '[data-card-id],[data-target],[data-place],[data-give],[data-kick],#drawBtn,#passBtn,#againBtn,#cancelArm,#dismissPeek',
   );
   if (!el) return;
 
@@ -707,6 +748,11 @@ document.addEventListener('click', (ev) => {
       armedCard = null;
       showScreen('setup');
     }
+    return;
+  }
+  if (el.id === 'dismissPeek') {
+    peeksDismissed = driver.view?.privateInfo.length ?? peeksDismissed;
+    lastSignature = '';
     return;
   }
   if (el.id === 'cancelArm') {

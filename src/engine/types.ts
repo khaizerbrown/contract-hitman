@@ -149,4 +149,9 @@ export type LogEntry =
 export interface PrivateInfo {
   kind: 'peek';
   cards: Card[];
+  /**
+   * How big the deck was when they looked. The moment it changes, somebody has
+   * drawn and what they saw is out of date.
+   */
+  deckCount: number;
 }

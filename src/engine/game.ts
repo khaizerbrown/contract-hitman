@@ -616,7 +616,7 @@ export class Game {
       case 'PEEK': {
         const seen = s.deck.slice(0, 3).map((c) => ({ ...c }));
         if (!s.privateInfo[actorId]) s.privateInfo[actorId] = [];
-        s.privateInfo[actorId].push({ kind: 'peek', cards: seen });
+        s.privateInfo[actorId].push({ kind: 'peek', cards: seen, deckCount: s.deck.length });
         break;
       }
       case 'LOCK': {

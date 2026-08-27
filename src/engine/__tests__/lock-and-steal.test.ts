@@ -206,6 +206,31 @@ describe('Mimic', () => {
     expect(handTypes(g, 'a')).toEqual([]);
   });
 
+  it("Mr K's example: hand of Skip and Mirror, mimic someone holding an Angel", () => {
+    const g = table({
+      a: ['MIMIC', 'SKIP', 'MIRROR'],
+      b: ['ANGEL', 'ATTACK', 'PEEK'],
+    });
+    playAndResolve(g, 'a', 'MIMIC', { targetPlayerId: 'b' });
+
+    // The Skip and the Mirror are gone. Their whole hand is yours, Angel and all.
+    expect(handTypes(g, 'a').sort()).toEqual(['ANGEL', 'ATTACK', 'PEEK']);
+    // And they still have theirs.
+    expect(handTypes(g, 'b').sort()).toEqual(['ANGEL', 'ATTACK', 'PEEK']);
+  });
+
+  it('is a reliable way to take an Angel early, because everyone starts with one', () => {
+    const g = Game.create({
+      players: [
+        { id: 'a', name: 'A' },
+        { id: 'b', name: 'B' },
+      ],
+      seed: 4242,
+    });
+    // Everyone is dealt an Angel, so anyone who has not been shot at still has it.
+    expect(g.player('b').hand.filter((c) => c.type === 'ANGEL').length).toBeGreaterThan(0);
+  });
+
   it('never copies another Mimic, so Mimic cards cannot breed', () => {
     const g = table({ a: ['MIMIC'], b: ['MIMIC', 'MIMIC', 'PEEK'] });
     playAndResolve(g, 'a', 'MIMIC', { targetPlayerId: 'b' });

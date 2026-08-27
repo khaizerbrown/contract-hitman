@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from '../game.js';
 import type { CardType } from '../types.js';
-import { cardOf, filler, handTypes, passAll } from './helpers.js';
+import { cardOf, filler, handTypes, passAll, playAndResolve } from './helpers.js';
 
 function table(hands: Record<string, CardType[]>, deck: CardType[] = filler(20)) {
   return Game.forTest({
@@ -79,14 +79,71 @@ describe('Burn', () => {
 });
 
 describe('Mirror', () => {
-  it('fires the last card played a second time', () => {
-    const g = table({ a: ['ATTACK'], b: [], c: ['MIRROR'] });
+  it('is played on your own turn, not in the reflex window', () => {
+    const g = table({ a: ['ATTACK'], b: ['MIRROR'], c: [] });
     g.play('a', cardOf(g, 'a', 'ATTACK').id, { targetPlayerId: 'b' });
-    g.play('c', cardOf(g, 'c', 'MIRROR').id);
+    // Holding a Mirror no longer buys you into the window at all.
+    expect(g.state.pending).toBeNull();
+    expect(handTypes(g, 'b')).toEqual(['MIRROR']);
+  });
+
+  it('repeats the last card played, on your turn', () => {
+    const g = table({ a: ['ATTACK'], b: ['MIRROR'], c: [] });
+    playAndResolve(g, 'a', 'ATTACK', { targetPlayerId: 'c' });
+    g.draw('a');
+    // B is up. The last card played was an Attack on C, so the Mirror repeats it.
+    playAndResolve(g, 'b', 'MIRROR');
+    g.draw('b');
+    expect(g.currentPlayerId()).toBe('c');
+    expect(g.state.currentTurnsRemaining).toBe(3);
+  });
+
+  it('lets the original card resolve first, on the turn it was played', () => {
+    // This is the ordering Mr K wanted: your Steal happens on your turn, and
+    // anybody copying it has to wait for theirs.
+    const g = table({ a: ['STEAL'], b: ['MIRROR'], c: ['PEEK', 'SKIP'] });
+    playAndResolve(g, 'a', 'STEAL', { targetPlayerId: 'c' });
+    g.choose('c', cardOf(g, 'c', 'PEEK').id);
+    expect(handTypes(g, 'a')).toEqual(['PEEK']); // A got their card, first
+    g.draw('a');
+
+    playAndResolve(g, 'b', 'MIRROR');
+    g.choose('c', cardOf(g, 'c', 'SKIP').id);
+    expect(handTypes(g, 'b')).toEqual(['SKIP']); // B copies it afterwards
+  });
+
+  it('cannot be played when nothing has been played yet', () => {
+    const g = table({ a: ['MIRROR'], b: [], c: [] });
+    expect(() => g.play('a', cardOf(g, 'a', 'MIRROR').id)).toThrow(/nothing has been played/i);
+  });
+
+  it('cannot repeat another Mirror', () => {
+    const g = table({ a: ['PEEK', 'MIRROR'], b: ['MIRROR'], c: [] });
+    playAndResolve(g, 'a', 'PEEK');
+    playAndResolve(g, 'a', 'MIRROR');
+    g.draw('a');
+    expect(() => g.play('b', cardOf(g, 'b', 'MIRROR').id)).toThrow(/cannot repeat another mirror/i);
+  });
+
+  it('cannot repeat a quick card', () => {
+    const g = table({ a: ['ATTACK'], b: ['CANCEL', 'MIRROR'], c: [] });
+    g.play('a', cardOf(g, 'a', 'ATTACK').id, { targetPlayerId: 'b' });
+    g.play('b', cardOf(g, 'b', 'CANCEL').id);
     passAll(g);
     g.draw('a');
-    expect(g.currentPlayerId()).toBe('b');
-    expect(g.state.currentTurnsRemaining).toBe(3);
+    expect(() => g.play('b', cardOf(g, 'b', 'MIRROR').id)).toThrow(/not worth repeating/i);
+  });
+
+  it('can itself be cancelled, because playing it opens a window', () => {
+    const g = table({ a: ['ATTACK'], b: ['MIRROR'], c: ['CANCEL'] });
+    playAndResolve(g, 'a', 'ATTACK', { targetPlayerId: 'c' });
+    g.draw('a');
+    g.play('b', cardOf(g, 'b', 'MIRROR').id);
+    g.play('c', cardOf(g, 'c', 'CANCEL').id);
+    passAll(g);
+    g.draw('b');
+    // Only A's original Attack ever landed on C.
+    expect(g.state.currentTurnsRemaining).toBe(2);
   });
 });
 

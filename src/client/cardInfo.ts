@@ -24,6 +24,6 @@ export const CARD_INFO: Record<CardType, CardInfo> = {
   FAKE_SHUFFLE: { name: 'Shuffle', blurb: 'Looks like a shuffle. Is not.' },
   CANCEL: { name: 'Cancel', blurb: 'Stop that card resolving.', quick: true },
   BURN: { name: 'Burn', blurb: 'Destroy it and every copy in every hand.', quick: true },
-  MIRROR: { name: 'Mirror', blurb: 'Fire the last card again.', quick: true },
+  MIRROR: { name: 'Mirror', blurb: 'Repeat the last card played.' },
   REDIRECT: { name: 'Redirect', blurb: 'Reflect an Attack and reverse the order.', quick: true },
 };

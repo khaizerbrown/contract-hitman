@@ -94,7 +94,8 @@ grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
   - **Cancel cannot touch an Angel.** It is not even offered.
   - **Burn can.** Burning an Angel kills the player it was saving and destroys
     every other Angel in every hand at the same time.
-  - **Mirror can stand in for one, but only just after somebody else was saved.**
+  - **Mirror can still stand in for one, but only just after somebody else was
+    saved.**
     If a Hitman finds you while an Angel is still the last card played, a Mirror
     copies it and saves you. It only stretches one player: after that a Mirror
     is the last card played, not an Angel, so the next person cannot repeat it.
@@ -104,9 +105,13 @@ grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
     dies, Angel in hand or not.
   - Angels stack: hold three, survive three Hitmen.
 - **Response chains** cap at 3 responses. Cards resolve last-played-first.
-- **Mirror** re-triggers the last non-quick card played. Mirroring another quick
-  card does nothing, which keeps chains bounded. It cannot be played against an
-  Angel.
+- **Mirror is a card you play on your turn, not a quick card.** It repeats the
+  last card anyone played. This means the original card fully resolves on its
+  own turn and the copy happens later, on yours - so if you Steal, you get your
+  card first and whoever copies you waits their turn. It refuses to be played
+  when there is nothing worth repeating: no card played yet, another Mirror, an
+  Angel, or a quick card. *(The brief had Mirror as a quick card. Changed on
+  Mr K's instruction.)*
 - **Burn** destroys the card it was played on plus every copy of that type in
   every hand. The deck and discard pile are untouched.
 - **Lock offers no choice.** It bans the type of the card played immediately

@@ -53,6 +53,8 @@ export interface GameState {
   drawFromBottom: boolean;
   /** The type of the last card anyone played. Lock bans whatever this is. */
   lastPlayedType: CardType | null;
+  /** Who it was aimed at, so a Mirror repeats it the same way. */
+  lastPlayedArgs: PlayArgs;
 
   privateInfo: Record<string, PrivateInfo[]>;
   log: LogEntry[];
@@ -165,6 +167,7 @@ export class Game {
       turnDeadline: 0,
       drawFromBottom: false,
       lastPlayedType: null,
+      lastPlayedArgs: {},
       privateInfo: {},
       log: [],
       winner: null,
@@ -355,6 +358,20 @@ export class Game {
       return;
     }
 
+    // Played on your own turn, a Mirror repeats the last card anyone played.
+    // What it copies is fixed here, before this Mirror becomes the last card.
+    let mirrorOf: { type: CardType; args: PlayArgs } | undefined;
+    if (card.type === 'MIRROR' && !answeringHitman) {
+      const repeat = s.lastPlayedType;
+      if (!repeat) throw new GameError('Nothing has been played for Mirror to repeat.');
+      if (repeat === 'MIRROR') throw new GameError('A Mirror cannot repeat another Mirror.');
+      if (repeat === 'ANGEL') {
+        throw new GameError('An Angel can only be mirrored when a Hitman lands on you.');
+      }
+      if (isQuick(repeat)) throw new GameError(`A ${repeat} is not worth repeating.`);
+      mirrorOf = { type: repeat, args: s.lastPlayedArgs };
+    }
+
     // A Mirror can stand in for an Angel, but only while an Angel is still the
     // last card played - that is, only if a Hitman found you immediately after
     // somebody else was saved by one.
@@ -402,6 +419,7 @@ export class Game {
 
     this.validateArgs(card.type, args, playerId);
     this.moveToStack(p, card, args);
+    if (mirrorOf) s.stack[s.stack.length - 1].mirrorOf = mirrorOf;
     this.openQuickWindow();
   }
 
@@ -410,6 +428,7 @@ export class Game {
     this.state.stack.push({ card, playerId: p.id, args, cancelled: false });
     this.log({ t: 'card_played', playerId: p.id, cardType: publicType(card.type) });
     this.state.lastPlayedType = card.type;
+    this.state.lastPlayedArgs = args;
   }
 
   /**
@@ -549,16 +568,14 @@ export class Game {
           break;
 
         case 'MIRROR':
-          // Re-triggers the last card played. Mirroring another quick card does
-          // nothing, which is what keeps response chains short and predictable.
           // A Mirror standing in for an Angel is doing that job instead.
-          if (!e.asAngel && below && !isQuick(below.card.type)) {
+          if (!e.asAngel && e.mirrorOf) {
             this.log({
               t: 'mirrored',
-              cardType: publicType(below.card.type),
+              cardType: publicType(e.mirrorOf.type),
               byPlayerId: e.playerId,
             });
-            this.applyEffect(below.card.type, e.playerId, below.args);
+            this.applyEffect(e.mirrorOf.type, e.playerId, e.mirrorOf.args);
           }
           break;
 

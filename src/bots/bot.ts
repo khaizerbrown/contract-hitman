@@ -78,6 +78,14 @@ export class Bot {
       }
     }
 
+    // Mirror repeats the last card played, so it is worth it when that card was.
+    const mirror = held('MIRROR');
+    const repeatable = view.lastPlayedType;
+    if (mirror && repeatable && !['MIRROR', 'ANGEL', 'CANCEL', 'BURN', 'REDIRECT'].includes(repeatable)) {
+      const worthIt = ['ATTACK', 'FULL_ATTACK', 'STEAL', 'MIMIC', 'PEEK'];
+      if (worthIt.includes(repeatable) && this.chance(0.5)) return this.play(game, mirror);
+    }
+
     const fake = held('FAKE_SHUFFLE');
     if (fake && this.chance(0.3)) return this.play(game, fake);
     const real = held('REAL_SHUFFLE');
@@ -107,10 +115,6 @@ export class Bot {
       if (cancel && this.chance(0.6)) return this.play(game, cancel);
       const burn = held('BURN');
       if (burn && this.chance(0.4)) return this.play(game, burn);
-    }
-    const mirror = held('MIRROR');
-    if (mirror && !aimedAtMe && top.cardType === 'ATTACK' && this.chance(0.3)) {
-      return this.play(game, mirror);
     }
     const cancel = held('CANCEL');
     if (cancel && this.chance(0.12)) return this.play(game, cancel);

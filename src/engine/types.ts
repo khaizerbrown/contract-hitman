@@ -19,7 +19,11 @@ export type CardType =
   | 'MIRROR'
   | 'REDIRECT';
 
-export const QUICK_CARDS = ['CANCEL', 'BURN', 'MIRROR', 'REDIRECT'] as const;
+/**
+ * Cards played inside the 2-second reflex window. Mirror is not one of them -
+ * it is played on your own turn and repeats whatever was played last.
+ */
+export const QUICK_CARDS = ['CANCEL', 'BURN', 'REDIRECT'] as const;
 /**
  * Hitman is the only card that can never leave a hand by being played. Angel is
  * played, but only at one moment: when a Hitman has just been drawn on you.
@@ -71,6 +75,8 @@ export interface StackEntry {
    * just before. It behaves as an Angel for the rest of its life on the table.
    */
   asAngel?: boolean;
+  /** What a Mirror is repeating, fixed at the moment it was played. */
+  mirrorOf?: { type: CardType; args: PlayArgs };
 }
 
 export interface AttackEffect {

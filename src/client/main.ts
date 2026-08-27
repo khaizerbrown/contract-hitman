@@ -573,7 +573,20 @@ function canPlay(v: MatchView, type: CardType): boolean {
   }
   if (p) return false;
   if (info.quick) return false;
+  if (type === 'MIRROR' && !canMirror(v)) return false;
   return v.currentPlayerId === meId() && v.you?.alive === true && v.stack.length === 0;
+}
+
+/** What a Mirror would repeat if you played it right now. */
+function canMirror(v: MatchView): boolean {
+  const t = v.lastPlayedType;
+  return !!t && t !== 'MIRROR' && t !== 'ANGEL' && !CARD_INFO[t].quick;
+}
+
+function mirrorBlurb(v: MatchView): string {
+  if (v.pending?.kind === 'angel') return 'Copy the Angel and save yourself.';
+  if (canMirror(v)) return `Repeats ${CARD_INFO[v.lastPlayedType!].name}.`;
+  return 'Repeats the last card played. Nothing to repeat.';
 }
 
 function cardHtml(v: MatchView, card: { id: string; type: CardType }, playable: boolean): string {
@@ -584,7 +597,9 @@ function cardHtml(v: MatchView, card: { id: string; type: CardType }, playable: 
       ? v.lastPlayedType
         ? `Bans ${CARD_INFO[v.lastPlayedType].name} for 3 turns.`
         : 'Bans the last card played. Nothing played yet.'
-      : info.blurb;
+      : card.type === 'MIRROR'
+        ? mirrorBlurb(v)
+        : info.blurb;
   const lock = v.locks.find((l) => l.type === card.type);
   const reacting = inReactWindow(v);
   const classes = ['card'];

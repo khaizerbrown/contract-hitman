@@ -72,8 +72,8 @@ Deck size grows with the player count: `count = base + floor(perExtraPlayer × (
 | Players | Cards to draw from | Hitman cards | Hitman density |
 |---|---|---|---|
 | 2 | 21 | 1 | 4.8% |
-| 5 | 37 | 4 | 10.8% |
-| 10 | 77 | 9 | 11.7% |
+| 5 | 36 | 4 | 11.1% |
+| 10 | 73 | 9 | 12.3% |
 
 Hitman cards are never seeded in the top 40% of the deck, so a match opens safe
 and turns lethal as the deck thins.
@@ -125,6 +125,8 @@ grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
   hand. Changed on Mr K's instruction.)*
   - Early on it is a reliable way to take an Angel, since everyone is dealt one
     and anyone who has not been shot at yet still has theirs.
+  - **There is exactly one Mimic in the deck**, at every table size. Whoever
+    draws it gets the only one there is.
 - **Mimic never copies another Mimic.** If it did, one Mimic would become two,
   then four, and hands would grow without limit until the game locked up. This
   was found by playing hundreds of bot matches, not by reading the brief.

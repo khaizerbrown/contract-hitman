@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { BALANCE } from '../../config/balance.js';
-import { buildBaseDeck, hitmanCount, seedHitmen, makeCard } from '../deck.js';
+import { buildBaseDeck, cardCount, hitmanCount, seedHitmen, makeCard } from '../deck.js';
 import { Game } from '../game.js';
 
 describe('Deck and setup', () => {
@@ -21,8 +21,8 @@ describe('Deck and setup', () => {
     const five = buildBaseDeck(5).length;
     const ten = buildBaseDeck(10).length;
     expect(two).toBe(28);
-    expect(five).toBe(53);
-    expect(ten).toBe(108);
+    expect(five).toBe(52);
+    expect(ten).toBe(104);
     expect(two).toBeLessThan(five);
     expect(five).toBeLessThan(ten);
   });
@@ -32,15 +32,21 @@ describe('Deck and setup', () => {
     expect(g.state.deck.length).toBe(21);
   });
 
-  it('leaves 37 cards to draw from in a 5-player game', () => {
+  it('leaves 36 cards to draw from in a 5-player game', () => {
     const g = Game.create({ players: ['a', 'b', 'c', 'd', 'e'].map(p), seed: 7 });
-    expect(g.state.deck.length).toBe(37);
+    expect(g.state.deck.length).toBe(36);
   });
 
-  it('leaves 77 cards to draw from in a 10-player game', () => {
+  it('leaves 73 cards to draw from in a 10-player game', () => {
     const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
     const g = Game.create({ players: ids.map(p), seed: 7 });
-    expect(g.state.deck.length).toBe(77);
+    expect(g.state.deck.length).toBe(73);
+  });
+
+  it('puts exactly one Mimic in the deck, at every table size', () => {
+    for (let players = 2; players <= 12; players++) {
+      expect(cardCount('MIMIC', players)).toBe(1);
+    }
   });
 
   it('deals every player one Angel plus four more cards', () => {

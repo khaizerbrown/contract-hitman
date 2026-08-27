@@ -82,7 +82,8 @@ export const BALANCE: Balance = {
     STEAL: { base: 2, perExtraPlayer: 1 },
     PEEK: { base: 2, perExtraPlayer: 1 },
     LOCK: { base: 2, perExtraPlayer: 0.5 },
-    MIMIC: { base: 1, perExtraPlayer: 0.5 },
+    // Exactly one Mimic exists, however many are at the table.
+    MIMIC: { base: 1, perExtraPlayer: 0 },
     BOTTOM_PULL: { base: 2, perExtraPlayer: 0.5 },
     REAL_SHUFFLE: { base: 2, perExtraPlayer: 0.5 },
     FAKE_SHUFFLE: { base: 2, perExtraPlayer: 0.5 },

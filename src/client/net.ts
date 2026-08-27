@@ -1,5 +1,4 @@
 import type { ClientMessage, RoomInfo, ServerMessage } from '../shared/protocol.js';
-import type { CardType } from '../engine/types.js';
 import type { MatchView } from '../engine/game.js';
 
 /**
@@ -124,13 +123,8 @@ export class Net {
 
   // ------------------------------------------------------- the same four moves
 
-  play(cardId: string, args: { targetPlayerId?: string; lockType?: string } = {}): void {
-    this.send({
-      t: 'play',
-      cardId,
-      targetPlayerId: args.targetPlayerId,
-      lockType: args.lockType as CardType | undefined,
-    });
+  play(cardId: string, args: { targetPlayerId?: string } = {}): void {
+    this.send({ t: 'play', cardId, targetPlayerId: args.targetPlayerId });
   }
 
   draw(): void {

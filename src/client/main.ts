@@ -1,6 +1,6 @@
 import { LocalMatch } from './localMatch.js';
 import { Net } from './net.js';
-import { CARD_INFO, LOCKABLE } from './cardInfo.js';
+import { CARD_INFO } from './cardInfo.js';
 import { GameError, type MatchView } from '../engine/game.js';
 import { BALANCE } from '../config/balance.js';
 import { buildBaseDeck, hitmanCount } from '../engine/deck.js';
@@ -16,7 +16,7 @@ interface Driver {
   readonly view: MatchView | null;
   nowMs(): number;
   tick?(): void;
-  play(cardId: string, args?: { targetPlayerId?: string; lockType?: string }): void;
+  play(cardId: string, args?: { targetPlayerId?: string }): void;
   draw(): void;
   pass(): void;
   choose(choice: string): void;
@@ -356,7 +356,11 @@ function renderReactStrip(v: MatchView): void {
     return;
   }
   const top = v.stack[v.stack.length - 1];
-  const at = top.targetPlayerId ? ` on ${nameOf(v, top.targetPlayerId)}` : '';
+  const at = top.targetPlayerId
+    ? ` on ${nameOf(v, top.targetPlayerId)}`
+    : top.lockType
+      ? ` on ${CARD_INFO[top.lockType].name}`
+      : '';
   const answers = (v.you?.hand ?? []).filter((c) => canPlay(v, c.type)).length;
   strip.className = 'reactStrip';
   strip.innerHTML = `
@@ -506,6 +510,13 @@ function canPlay(v: MatchView, type: CardType): boolean {
 
 function cardHtml(v: MatchView, card: { id: string; type: CardType }, playable: boolean): string {
   const info = CARD_INFO[card.type];
+  // Lock has no choice attached, so the card itself says what it would ban.
+  const blurb =
+    card.type === 'LOCK'
+      ? v.lastPlayedType
+        ? `Bans ${CARD_INFO[v.lastPlayedType].name} for 3 turns.`
+        : 'Bans the last card played. Nothing played yet.'
+      : info.blurb;
   const lock = v.locks.find((l) => l.type === card.type);
   const reacting = inReactWindow(v);
   const classes = ['card'];
@@ -521,7 +532,7 @@ function cardHtml(v: MatchView, card: { id: string; type: CardType }, playable: 
   const badge = lock ? `LOCKED ${lock.turnsRemaining}` : '';
   return `<button class="${classes.join(' ')}" data-card-id="${card.id}" data-lockturns="${badge}">
     <div class="cname">${info.name}</div>
-    <div class="cblurb">${info.blurb}</div>
+    <div class="cblurb">${blurb}</div>
     <div class="ctag">${tag}</div>
   </button>`;
 }
@@ -541,9 +552,8 @@ function renderHand(v: MatchView): void {
 function renderActions(v: MatchView): void {
   const actions = document.querySelector<HTMLElement>('.actions')!;
   if (armedCard) {
-    const info = CARD_INFO[armedCard.type];
-    const what = info.needsTarget ? 'Tap an opponent above' : 'Choose a card type';
-    actions.innerHTML = `<button id="cancelArm">${what.toUpperCase()} &nbsp;·&nbsp; TAP TO CANCEL</button>`;
+    actions.innerHTML =
+      '<button id="cancelArm">TAP AN OPPONENT ABOVE &nbsp;·&nbsp; TAP TO CANCEL</button>';
     return;
   }
   if (inReactWindow(v)) {
@@ -615,19 +625,6 @@ function renderOverlay(v: MatchView): void {
     return;
   }
 
-  if (armedCard && CARD_INFO[armedCard.type].needsLockType) {
-    ov.className = 'overlay';
-    ov.innerHTML = `<div class="panel">
-      <h2>LOCK A CARD TYPE</h2>
-      <p>Nobody may play it for 3 turns.</p>
-      <div class="typeGrid">${LOCKABLE.map(
-        (t) => `<button data-lock="${t}">${CARD_INFO[t].name.toUpperCase()}</button>`,
-      ).join('')}</div>
-      <div class="row" style="margin-top:10px"><button id="cancelArm">BACK</button></div>
-    </div>`;
-    return;
-  }
-
   ov.className = 'overlay hidden';
   ov.innerHTML = '';
 }
@@ -653,7 +650,7 @@ function attempt(fn: () => void): void {
 
 document.addEventListener('click', (ev) => {
   const el = (ev.target as HTMLElement).closest<HTMLElement>(
-    '[data-card-id],[data-target],[data-place],[data-give],[data-lock],[data-kick],#drawBtn,#passBtn,#againBtn,#cancelArm',
+    '[data-card-id],[data-target],[data-place],[data-give],[data-kick],#drawBtn,#passBtn,#againBtn,#cancelArm',
   );
   if (!el) return;
 
@@ -686,13 +683,6 @@ document.addEventListener('click', (ev) => {
   const place = el.getAttribute('data-place');
   if (place) return attempt(() => driver!.choose(place));
 
-  const lockType = el.getAttribute('data-lock');
-  if (lockType && armedCard) {
-    const card = armedCard;
-    armedCard = null;
-    return attempt(() => driver!.play(card.id, { lockType }));
-  }
-
   const target = el.getAttribute('data-target');
   if (target && armedCard && CARD_INFO[armedCard.type].needsTarget) {
     const card = armedCard;
@@ -717,7 +707,7 @@ document.addEventListener('click', (ev) => {
       return toast('Not right now.');
     }
     const info = CARD_INFO[card.type];
-    if (info.needsTarget || info.needsLockType) {
+    if (info.needsTarget) {
       armedCard = { id: card.id, type: card.type };
       lastSignature = '';
       return;

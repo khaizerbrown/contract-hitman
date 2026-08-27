@@ -1,5 +1,3 @@
-import type { CardType } from '../engine/types.js';
-
 /** One seat at a table, as everyone in the lobby sees it. */
 export interface SeatInfo {
   id: string;
@@ -27,7 +25,7 @@ export type ClientMessage =
   | { t: 'addBot' }
   | { t: 'removeSeat'; seatId: string }
   | { t: 'startMatch' }
-  | { t: 'play'; cardId: string; targetPlayerId?: string; lockType?: CardType }
+  | { t: 'play'; cardId: string; targetPlayerId?: string }
   | { t: 'draw' }
   | { t: 'pass' }
   | { t: 'choose'; choice: string };

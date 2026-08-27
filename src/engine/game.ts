@@ -51,6 +51,8 @@ export interface GameState {
 
   turnDeadline: number;
   drawFromBottom: boolean;
+  /** The type of the last card anyone played. Lock bans whatever this is. */
+  lastPlayedType: CardType | null;
 
   privateInfo: Record<string, PrivateInfo[]>;
   log: LogEntry[];
@@ -162,6 +164,7 @@ export class Game {
       pauseStartedAt: null,
       turnDeadline: 0,
       drawFromBottom: false,
+      lastPlayedType: null,
       privateInfo: {},
       log: [],
       winner: null,
@@ -326,6 +329,14 @@ export class Game {
     }
     if (this.isLocked(card.type)) throw new GameError('That card type is locked right now.');
 
+    if (card.type === 'LOCK') {
+      const banned = this.lockTargetFor(card);
+      if (!banned) {
+        throw new GameError('Nothing has been played yet for Lock to ban.');
+      }
+      args = { ...args, lockType: banned };
+    }
+
     if (s.pending && s.pending.kind === 'quickWindow') {
       if (!isQuick(card.type)) {
         throw new GameError('Only quick cards can be played in the reflex window.');
@@ -357,6 +368,17 @@ export class Game {
     p.hand = p.hand.filter((c) => c.id !== card.id);
     this.state.stack.push({ card, playerId: p.id, args, cancelled: false });
     this.log({ t: 'card_played', playerId: p.id, cardType: publicType(card.type) });
+    this.state.lastPlayedType = card.type;
+  }
+
+  /**
+   * Lock does not offer a choice. It bans whatever was played immediately
+   * before it. Hitman and Angel can never be banned - neither is ever played
+   * from a hand, so neither can ever be the last card played.
+   */
+  private lockTargetFor(card: Card): CardType | null {
+    if (card.type !== 'LOCK') return null;
+    return this.state.lastPlayedType;
   }
 
   private validateArgs(type: CardType, args: PlayArgs, actorId: string): void {
@@ -369,11 +391,6 @@ export class Game {
       if (type === 'STEAL' && target.hand.length === 0) {
         throw new GameError('That player has no cards to take.');
       }
-    }
-    if (type === 'LOCK') {
-      const lt = args.lockType;
-      if (!lt) throw new GameError('Choose a card type to lock.');
-      if (isNeverPlayable(lt)) throw new GameError('You cannot lock that card type.');
     }
   }
 
@@ -909,6 +926,7 @@ export class Game {
           : { ...s.pending }
         : null,
       turnDeadline: s.turnDeadline,
+      lastPlayedType: s.lastPlayedType,
       now: s.now,
       privateInfo: viewerId ? s.privateInfo[viewerId] ?? [] : [],
       log: s.log,

@@ -146,10 +146,7 @@ wss.on('connection', (socket) => {
           return;
         case 'play':
           requireRoom(me).action(me.playerId, (g) =>
-            g.play(me.playerId, msg.cardId, {
-              targetPlayerId: msg.targetPlayerId,
-              lockType: msg.lockType,
-            }),
+            g.play(me.playerId, msg.cardId, { targetPlayerId: msg.targetPlayerId }),
           );
           return;
         case 'draw':

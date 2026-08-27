@@ -7,7 +7,6 @@ export interface CardInfo {
   passive?: boolean;
   quick?: boolean;
   needsTarget?: boolean;
-  needsLockType?: boolean;
 }
 
 export const CARD_INFO: Record<CardType, CardInfo> = {
@@ -18,7 +17,7 @@ export const CARD_INFO: Record<CardType, CardInfo> = {
   SKIP: { name: 'Skip', blurb: 'End your turn now. No draw.' },
   STEAL: { name: 'Steal', blurb: 'They choose a card to hand you.', needsTarget: true },
   PEEK: { name: 'Peek', blurb: 'See the top 3 cards. Only you.' },
-  LOCK: { name: 'Lock', blurb: 'Ban a card type for 3 turns.', needsLockType: true },
+  LOCK: { name: 'Lock', blurb: 'Bans the card just played for 3 turns.' },
   MIMIC: { name: 'Mimic', blurb: 'Copy their whole hand. They keep theirs.', needsTarget: true },
   BOTTOM_PULL: { name: 'Bottom Pull', blurb: 'Your draw comes from the bottom.' },
   REAL_SHUFFLE: { name: 'Shuffle', blurb: 'Shuffle the deck.' },
@@ -28,20 +27,3 @@ export const CARD_INFO: Record<CardType, CardInfo> = {
   MIRROR: { name: 'Mirror', blurb: 'Fire the last card again.', quick: true },
   REDIRECT: { name: 'Redirect', blurb: 'Reflect an Attack and reverse the order.', quick: true },
 };
-
-/** Card types a player may choose to ban with Lock. */
-export const LOCKABLE: CardType[] = [
-  'ATTACK',
-  'FULL_ATTACK',
-  'SKIP',
-  'STEAL',
-  'PEEK',
-  'LOCK',
-  'MIMIC',
-  'BOTTOM_PULL',
-  'REAL_SHUFFLE',
-  'CANCEL',
-  'BURN',
-  'MIRROR',
-  'REDIRECT',
-];

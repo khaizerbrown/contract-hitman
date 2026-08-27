@@ -93,7 +93,11 @@ grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
   card does nothing, which keeps chains bounded.
 - **Burn** destroys the card it was played on plus every copy of that type in
   every hand. The deck and discard pile are untouched.
-- **Lock** bans a type for exactly 3 player-turns, counted down visibly.
+- **Lock offers no choice.** It bans the type of the card played immediately
+  before it, for exactly 3 player-turns, counted down visibly. Hitman and Angel
+  can never be banned because neither is ever played from a hand. If nothing has
+  been played yet, Lock cannot be played. *(This departs from the brief, which
+  had the player choose the type. Changed on Mr K's instruction.)*
 - **Bottom Pull** replaces your end-of-turn draw with one from the bottom.
 - **Every clock freezes** while any player is making a choice.
 - **Steal, Attack, Mimic** cannot target yourself or an eliminated player.

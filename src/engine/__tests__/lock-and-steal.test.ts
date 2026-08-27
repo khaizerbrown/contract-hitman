@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { BALANCE } from '../../config/balance.js';
 import { Game } from '../game.js';
 import type { CardType } from '../types.js';
-import { cardOf, filler, handTypes, playAndResolve } from './helpers.js';
+import { cardOf, filler, handTypes, passAll, playAndResolve } from './helpers.js';
 
 function table(hands: Record<string, CardType[]>, deck: CardType[] = filler(30)) {
   return Game.forTest({
@@ -12,52 +12,98 @@ function table(hands: Record<string, CardType[]>, deck: CardType[] = filler(30))
 }
 
 describe('Lock', () => {
-  it('bans the chosen card type for everyone', () => {
-    const g = table({ a: ['LOCK'], b: ['SKIP'] });
-    playAndResolve(g, 'a', 'LOCK', { lockType: 'SKIP' });
-    g.draw('a');
+  it('bans the card that was played immediately before it', () => {
+    const g = table({ a: ['SKIP'], b: ['LOCK'] });
+    playAndResolve(g, 'a', 'SKIP');
+    // Skip ended A's turn, so B is up and locks what A just played.
+    playAndResolve(g, 'b', 'LOCK');
     expect(g.isLocked('SKIP')).toBe(true);
-    expect(() => g.play('b', cardOf(g, 'b', 'SKIP').id)).toThrow();
+  });
+
+  it('gives the player no say in what gets banned', () => {
+    const g = table({ a: ['PEEK', 'LOCK'], b: [] });
+    playAndResolve(g, 'a', 'PEEK');
+    // Even asked for something else, the board decides.
+    g.play('a', cardOf(g, 'a', 'LOCK').id, { lockType: 'ATTACK' });
+    passAll(g);
+    expect(g.isLocked('PEEK')).toBe(true);
+    expect(g.isLocked('ATTACK')).toBe(false);
+  });
+
+  it('bans it for everyone, not just the player who locked it', () => {
+    const g = table({ a: ['PEEK', 'LOCK'], b: ['PEEK'] });
+    playAndResolve(g, 'a', 'PEEK');
+    playAndResolve(g, 'a', 'LOCK');
+    g.draw('a');
+    expect(() => g.play('b', cardOf(g, 'b', 'PEEK').id)).toThrow();
   });
 
   it('lifts after exactly 3 player-turns', () => {
-    const g = table({ a: ['LOCK', 'SKIP'], b: ['SKIP', 'SKIP'] });
-    playAndResolve(g, 'a', 'LOCK', { lockType: 'SKIP' });
+    const g = table({ a: ['PEEK', 'LOCK', 'SKIP'], b: ['SKIP', 'SKIP'] });
+    playAndResolve(g, 'a', 'PEEK');
+    playAndResolve(g, 'a', 'LOCK');
     g.draw('a');
 
-    // Turn 1 of the ban - B
-    expect(g.isLocked('SKIP')).toBe(true);
+    expect(g.isLocked('PEEK')).toBe(true); // turn 1 of the ban - B
     g.draw('b');
-    // Turn 2 of the ban - A
-    expect(g.isLocked('SKIP')).toBe(true);
+    expect(g.isLocked('PEEK')).toBe(true); // turn 2 - A
     g.draw('a');
-    // Turn 3 of the ban - B
-    expect(g.isLocked('SKIP')).toBe(true);
+    expect(g.isLocked('PEEK')).toBe(true); // turn 3 - B
     g.draw('b');
-    // Ban is over
-    expect(g.isLocked('SKIP')).toBe(false);
+    expect(g.isLocked('PEEK')).toBe(false);
   });
 
   it('says 3 turns the moment it is played, not 4', () => {
     // The screen must never show the extra turn the engine carries internally.
-    const g = table({ a: ['LOCK'], b: [] });
-    playAndResolve(g, 'a', 'LOCK', { lockType: 'SKIP' });
-    expect(g.viewFor('a').locks).toEqual([{ type: 'SKIP', turnsRemaining: 3 }]);
-    expect(g.viewFor('b').locks).toEqual([{ type: 'SKIP', turnsRemaining: 3 }]);
+    const g = table({ a: ['PEEK', 'LOCK'], b: [] });
+    playAndResolve(g, 'a', 'PEEK');
+    playAndResolve(g, 'a', 'LOCK');
+    expect(g.viewFor('a').locks).toEqual([{ type: 'PEEK', turnsRemaining: 3 }]);
+    expect(g.viewFor('b').locks).toEqual([{ type: 'PEEK', turnsRemaining: 3 }]);
   });
 
   it('counts down visibly so players know when it lifts', () => {
-    const g = table({ a: ['LOCK'], b: [] });
-    playAndResolve(g, 'a', 'LOCK', { lockType: 'SKIP' });
+    const g = table({ a: ['PEEK', 'LOCK'], b: [] });
+    playAndResolve(g, 'a', 'PEEK');
+    playAndResolve(g, 'a', 'LOCK');
     g.draw('a');
-    expect(g.viewFor('b').locks).toEqual([{ type: 'SKIP', turnsRemaining: 3 }]);
+    expect(g.viewFor('b').locks).toEqual([{ type: 'PEEK', turnsRemaining: 3 }]);
     g.draw('b');
-    expect(g.viewFor('a').locks).toEqual([{ type: 'SKIP', turnsRemaining: 2 }]);
+    expect(g.viewFor('a').locks).toEqual([{ type: 'PEEK', turnsRemaining: 2 }]);
   });
 
-  it('cannot lock a card that is never playable anyway', () => {
+  it('can ban another Lock, if a Lock was the last thing played', () => {
+    const g = table({ a: ['PEEK', 'LOCK'], b: ['LOCK'] });
+    playAndResolve(g, 'a', 'PEEK');
+    playAndResolve(g, 'a', 'LOCK'); // bans PEEK, and is now the last card played
+    g.draw('a');
+    playAndResolve(g, 'b', 'LOCK');
+    expect(g.isLocked('LOCK')).toBe(true);
+  });
+
+  it('refuses to be played when nothing has been played yet', () => {
     const g = table({ a: ['LOCK'], b: [] });
-    expect(() => g.play('a', cardOf(g, 'a', 'LOCK').id, { lockType: 'HITMAN' })).toThrow();
+    expect(() => g.play('a', cardOf(g, 'a', 'LOCK').id)).toThrow(
+      /nothing has been played yet/i,
+    );
+  });
+
+  it('can never ban a Hitman or an Angel, because neither is ever played', () => {
+    // Draw a Hitman, be saved by the Angel, then Lock on the next turn.
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['ANGEL'] },
+        { id: 'b', name: 'B', hand: ['PEEK', 'LOCK'] },
+      ],
+      deck: ['HITMAN', ...filler(10)],
+    });
+    g.draw('a');
+    g.choose('a', 'bottom');
+    playAndResolve(g, 'b', 'PEEK');
+    playAndResolve(g, 'b', 'LOCK');
+    expect(g.isLocked('HITMAN')).toBe(false);
+    expect(g.isLocked('ANGEL')).toBe(false);
+    expect(g.isLocked('PEEK')).toBe(true);
   });
 });
 

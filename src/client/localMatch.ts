@@ -46,7 +46,7 @@ export class LocalMatch {
 
   // ---------------------------------------------------------- the four moves
 
-  play(cardId: string, args: { targetPlayerId?: string; lockType?: string } = {}): void {
+  play(cardId: string, args: { targetPlayerId?: string } = {}): void {
     this.game.setNow(this.nowMs());
     this.game.play(this.humanId, cardId, args as never);
   }

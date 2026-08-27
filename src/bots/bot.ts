@@ -59,9 +59,13 @@ export class Bot {
       return this.play(game, attack, { targetPlayerId: this.pickVictim(opponents) });
     }
 
+    // Lock bans whatever was played last, so it is only worth playing when
+    // something worth banning is sitting there.
     const lock = held('LOCK');
-    if (lock && this.chance(0.2)) {
-      return this.play(game, lock, { lockType: this.chance(0.5) ? 'SKIP' : 'CANCEL' });
+    const wouldBan = view.lastPlayedType;
+    if (lock && wouldBan && this.chance(0.45)) {
+      const worthIt = ['SKIP', 'CANCEL', 'ATTACK', 'FULL_ATTACK', 'REDIRECT', 'BURN'];
+      if (worthIt.includes(wouldBan) || this.chance(0.25)) return this.play(game, lock);
     }
 
     const mimic = held('MIMIC');

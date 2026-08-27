@@ -330,13 +330,30 @@ export class Game {
 
     // An Angel goes down at exactly one moment: a Hitman has just been drawn on
     // you. Putting it on the table gives the rest of the table a beat to Burn it.
+    const answeringHitman =
+      s.pending && s.pending.kind === 'angel' && s.pending.playerId === playerId;
+
     if (card.type === 'ANGEL') {
-      if (!(s.pending && s.pending.kind === 'angel' && s.pending.playerId === playerId)) {
+      if (!answeringHitman) {
         throw new GameError('An Angel only goes down when a Hitman has your name on it.');
       }
       this.clearPending();
       this.moveToStack(p, card, args);
-      this.log({ t: 'angel_played', playerId });
+      this.log({ t: 'angel_played', playerId, mirrored: false });
+      this.openQuickWindow();
+      return;
+    }
+
+    // A Mirror can stand in for an Angel, but only while an Angel is still the
+    // last card played - that is, only if a Hitman found you immediately after
+    // somebody else was saved by one.
+    if (card.type === 'MIRROR' && answeringHitman && this.mirrorCountsAsAngel()) {
+      this.clearPending();
+      p.hand = p.hand.filter((c) => c.id !== card.id);
+      s.stack.push({ card, playerId, args, cancelled: false, asAngel: true });
+      this.log({ t: 'card_played', playerId, cardType: 'MIRROR' });
+      this.log({ t: 'angel_played', playerId, mirrored: true });
+      s.lastPlayedType = card.type;
       this.openQuickWindow();
       return;
     }
@@ -411,7 +428,7 @@ export class Game {
     const top = this.state.stack[this.state.stack.length - 1];
     if (!top) return false;
     if (type === 'REDIRECT') return top.card.type === 'ATTACK';
-    if (top.card.type === 'ANGEL') {
+    if (top.card.type === 'ANGEL' || top.asAngel) {
       // An Angel cannot be cancelled. Burn is the only answer to one - and it
       // takes every Angel at the table with it. Mirroring a save means nothing.
       return type === 'BURN';
@@ -484,7 +501,7 @@ export class Game {
 
       switch (e.card.type) {
         case 'CANCEL':
-          if (below && below.card.type !== 'ANGEL') {
+          if (below && below.card.type !== 'ANGEL' && !below.cancelled && !below.asAngel) {
             below.cancelled = true;
             this.log({
               t: 'card_cancelled',
@@ -523,7 +540,8 @@ export class Game {
         case 'MIRROR':
           // Re-triggers the last card played. Mirroring another quick card does
           // nothing, which is what keeps response chains short and predictable.
-          if (below && !isQuick(below.card.type)) {
+          // A Mirror standing in for an Angel is doing that job instead.
+          if (!e.asAngel && below && !isQuick(below.card.type)) {
             this.log({
               t: 'mirrored',
               cardType: publicType(below.card.type),
@@ -550,7 +568,7 @@ export class Game {
 
     for (const e of entries) s.discard.push(e.card);
 
-    const angel = entries.find((e) => e.card.type === 'ANGEL');
+    const angel = entries.find((e) => e.card.type === 'ANGEL' || e.asAngel);
     if (angel) {
       if (angel.cancelled) {
         this.log({ t: 'angel_burned', playerId: angel.playerId });
@@ -742,7 +760,7 @@ export class Game {
 
     s.pendingHitman = hitman;
 
-    if (p.hand.some((c) => c.type === 'ANGEL') && !this.isLocked('ANGEL')) {
+    if (this.canAnswerHitman(playerId)) {
       // They hold an answer. Putting it down is a play, which the rest of the
       // table gets a beat to Burn.
       this.setPending({
@@ -754,6 +772,25 @@ export class Game {
     }
 
     this.killByHitman(playerId);
+  }
+
+  /**
+   * An Angel of your own, or a Mirror while an Angel is still the last card
+   * played. The Mirror route is the narrow one: it only exists in the moment
+   * straight after somebody else was saved.
+   */
+  private mirrorCountsAsAngel(): boolean {
+    return this.state.lastPlayedType === 'ANGEL';
+  }
+
+  private canAnswerHitman(playerId: string): boolean {
+    const hand = this.player(playerId).hand;
+    if (hand.some((c) => c.type === 'ANGEL') && !this.isLocked('ANGEL')) return true;
+    return (
+      this.mirrorCountsAsAngel() &&
+      hand.some((c) => c.type === 'MIRROR') &&
+      !this.isLocked('MIRROR')
+    );
   }
 
   /** The Hitman lands: no Angel, or the Angel was burned off the table. */
@@ -881,11 +918,15 @@ export class Game {
     }
     if (pending.kind === 'angel') {
       // Nobody would ever choose to die, so a slow connection never costs a life.
-      const angel = this.player(pending.playerId).hand.find((c) => c.type === 'ANGEL');
+      const hand = this.player(pending.playerId).hand;
+      // Spend the Mirror if it will do, and keep the Angel for next time.
+      const answer =
+        (this.mirrorCountsAsAngel() ? hand.find((c) => c.type === 'MIRROR') : undefined) ??
+        hand.find((c) => c.type === 'ANGEL');
       this.log({ t: 'timed_out', playerId: pending.playerId });
       try {
-        if (!angel) throw new GameError('no angel');
-        this.play(pending.playerId, angel.id);
+        if (!answer) throw new GameError('nothing to answer with');
+        this.play(pending.playerId, answer.id);
       } catch {
         this.clearPending();
         this.killByHitman(pending.playerId);

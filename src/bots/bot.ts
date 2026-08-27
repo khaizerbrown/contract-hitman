@@ -130,8 +130,14 @@ export class Bot {
 
   /** A Hitman landed on this bot and it holds an answer. Put it down. */
   playAngel(game: Game): void {
-    const angel = (game.viewFor(this.id).you?.hand ?? []).find((c) => c.type === 'ANGEL');
-    if (angel) this.play(game, angel);
+    const view = game.viewFor(this.id);
+    const hand = view.you?.hand ?? [];
+    // Copy the Angel with a Mirror where that works, and keep the real one.
+    const mirror = view.lastPlayedType === 'ANGEL'
+      ? hand.find((c) => c.type === 'MIRROR')
+      : undefined;
+    const answer = mirror ?? hand.find((c) => c.type === 'ANGEL');
+    if (answer) this.play(game, answer);
   }
 
   /** An Angel just saved this bot: decide where the Hitman goes back. */

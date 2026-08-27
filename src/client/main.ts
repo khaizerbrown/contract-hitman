@@ -461,7 +461,12 @@ function describe(v: MatchView, e: LogEntry): { text: string; cls: string } {
     case 'hitman_drawn':
       return { text: `${n(e.playerId)} DRAWS A HITMAN`, cls: 'hit' };
     case 'angel_played':
-      return { text: `${n(e.playerId)} puts an Angel down`, cls: 'good' };
+      return {
+        text: e.mirrored
+          ? `${n(e.playerId)} mirrors the Angel to save themselves`
+          : `${n(e.playerId)} puts an Angel down`,
+        cls: 'good',
+      };
     case 'angel_burned':
       return { text: `${n(e.playerId)}'s Angel is burned off the table`, cls: 'hit' };
     case 'angel_saved':
@@ -502,8 +507,13 @@ function canPlay(v: MatchView, type: CardType): boolean {
   if (info.passive) return false;
   if (v.locks.some((l) => l.type === type)) return false;
   const p = v.pending;
-  if (type === 'ANGEL') {
-    return p?.kind === 'angel' && (p as { playerId: string }).playerId === meId();
+  const myAngelMoment =
+    p?.kind === 'angel' && (p as { playerId: string }).playerId === meId();
+  if (type === 'ANGEL') return myAngelMoment;
+  if (myAngelMoment) {
+    // A Mirror stands in for an Angel, but only while an Angel is still the
+    // last card played.
+    return type === 'MIRROR' && v.lastPlayedType === 'ANGEL';
   }
   if (p && p.kind === 'angel') return false;
   if (p && p.kind === 'quickWindow') {
@@ -610,13 +620,18 @@ function renderOverlay(v: MatchView): void {
   // The reflex window is handled in place by renderReactStrip, not here.
 
   if (p && p.kind === 'angel' && (p as { playerId: string }).playerId === meId()) {
-    const angels = (v.you?.hand ?? []).filter((c) => c.type === 'ANGEL');
+    const answers = (v.you?.hand ?? []).filter((c) => canPlay(v, c.type));
+    const canMirror = answers.some((c) => c.type === 'MIRROR');
     ov.className = 'overlay';
     ov.innerHTML = `<div class="panel">
       <h2>A HITMAN HAS YOUR NAME ON IT</h2>
-      <p>Put an Angel down to answer it. Nobody can cancel an Angel &mdash; but a
-      Burn will take it, and every other Angel at the table, with it.</p>
-      <div class="miniHand">${angels.map((c) => cardHtml(v, c, true)).join('')}</div>
+      <p>Put something down to answer it, or die. Nobody can cancel an Angel
+      &mdash; but a Burn takes it, and every other Angel at the table, with it.${
+        canMirror
+          ? ' An Angel was the last card played, so a Mirror will copy it and keep your Angel for later.'
+          : ''
+      }</p>
+      <div class="miniHand">${answers.map((c) => cardHtml(v, c, true)).join('')}</div>
     </div>`;
     return;
   }

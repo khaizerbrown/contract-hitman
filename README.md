@@ -94,7 +94,12 @@ grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
   - **Cancel cannot touch an Angel.** It is not even offered.
   - **Burn can.** Burning an Angel kills the player it was saving and destroys
     every other Angel in every hand at the same time.
-  - **Mirror cannot.** Repeating somebody else's save has no meaning.
+  - **Mirror can stand in for one, but only just after somebody else was saved.**
+    If a Hitman finds you while an Angel is still the last card played, a Mirror
+    copies it and saves you. It only stretches one player: after that a Mirror
+    is the last card played, not an Angel, so the next person cannot repeat it.
+    Play anything else in between and you lose the chance. Holding both, you can
+    spend the Mirror and keep the Angel.
   - **Lock can ban Angel.** While it is banned, anyone who draws a Hitman simply
     dies, Angel in hand or not.
   - Angels stack: hold three, survive three Hitmen.

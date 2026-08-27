@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from '../game.js';
-import { cardOf, filler, handTypes, passAll, playAngel, surviveHitman } from './helpers.js';
+import {
+  cardOf,
+  filler,
+  handTypes,
+  passAll,
+  playAndResolve,
+  playAngel,
+  surviveHitman,
+} from './helpers.js';
 
 function twoPlayers(aHand: string[], bHand: string[], deck: string[]) {
   return Game.forTest({
@@ -147,6 +155,124 @@ describe('An Angel on the table', () => {
     passAll(g);
     expect(g.player('a').alive).toBe(false);
     expect(handTypes(g, 'c')).toEqual(['PEEK']);
+  });
+});
+
+describe('Mirroring an Angel to save yourself', () => {
+  /**
+   * A is hit and answers with an Angel. That ends A's turn. B is hit on their
+   * very next draw, and an Angel is still the last card played - so a Mirror
+   * copies it.
+   */
+  function backToBack(bHand: string[]) {
+    return Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['ANGEL'] },
+        { id: 'b', name: 'B', hand: bHand as never },
+        { id: 'c', name: 'C', hand: ['PEEK'] },
+      ],
+      deck: ['HITMAN', 'HITMAN', ...filler(10)],
+    });
+  }
+
+  it('saves you when a Hitman finds you straight after somebody was saved', () => {
+    const g = backToBack(['MIRROR']);
+    surviveHitman(g, 'a', 'top'); // A survives, Hitman back on top for B
+    g.draw('b');
+    expect(g.state.pending?.kind).toBe('angel');
+    g.play('b', cardOf(g, 'b', 'MIRROR').id);
+    passAll(g);
+    g.choose('b', 'bottom');
+    expect(g.player('b').alive).toBe(true);
+    expect(handTypes(g, 'b')).toEqual([]);
+  });
+
+  it('lets you keep your own Angel by spending the Mirror instead', () => {
+    const g = backToBack(['MIRROR', 'ANGEL']);
+    surviveHitman(g, 'a', 'top');
+    g.draw('b');
+    g.play('b', cardOf(g, 'b', 'MIRROR').id);
+    passAll(g);
+    g.choose('b', 'bottom');
+    expect(g.player('b').alive).toBe(true);
+    expect(handTypes(g, 'b')).toEqual(['ANGEL']);
+  });
+
+  it('does not work if anything else has been played since', () => {
+    const g = backToBack(['MIRROR', 'PEEK']);
+    surviveHitman(g, 'a', 'top');
+    playAndResolve(g, 'b', 'PEEK'); // B spoils it themselves
+    g.draw('b');
+    expect(g.player('b').alive).toBe(false);
+  });
+
+  it('does not work when no Angel has been played at all', () => {
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['MIRROR'] },
+        { id: 'b', name: 'B', hand: ['PEEK'] },
+        { id: 'c', name: 'C', hand: ['PEEK'] },
+      ],
+      deck: ['HITMAN', ...filler(10)],
+    });
+    g.draw('a');
+    expect(g.state.pending).toBeNull();
+    expect(g.player('a').alive).toBe(false);
+  });
+
+  it('only stretches one player - the next one cannot mirror it again', () => {
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['ANGEL'] },
+        { id: 'b', name: 'B', hand: ['MIRROR'] },
+        { id: 'c', name: 'C', hand: ['MIRROR'] },
+      ],
+      deck: ['HITMAN', 'HITMAN', 'HITMAN', ...filler(10)],
+    });
+    surviveHitman(g, 'a', 'top');
+    g.draw('b');
+    g.play('b', cardOf(g, 'b', 'MIRROR').id);
+    passAll(g);
+    g.choose('b', 'top');
+    // A Mirror was the last card played now, not an Angel, so C is out of luck.
+    g.draw('c');
+    expect(g.player('c').alive).toBe(false);
+    expect(g.state.pending).toBeNull();
+  });
+
+  it('can itself be burned, which kills the player it was covering', () => {
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['ANGEL'] },
+        { id: 'b', name: 'B', hand: ['MIRROR'] },
+        { id: 'c', name: 'C', hand: ['BURN'] },
+      ],
+      deck: ['HITMAN', 'HITMAN', ...filler(10)],
+    });
+    surviveHitman(g, 'a', 'top');
+    g.draw('b');
+    g.play('b', cardOf(g, 'b', 'MIRROR').id);
+    g.play('c', cardOf(g, 'c', 'BURN').id);
+    passAll(g);
+    expect(g.player('b').alive).toBe(false);
+  });
+
+  it('cannot be cancelled either', () => {
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['ANGEL'] },
+        { id: 'b', name: 'B', hand: ['MIRROR'] },
+        { id: 'c', name: 'C', hand: ['CANCEL'] },
+      ],
+      deck: ['HITMAN', 'HITMAN', ...filler(10)],
+    });
+    surviveHitman(g, 'a', 'top');
+    g.draw('b');
+    g.play('b', cardOf(g, 'b', 'MIRROR').id);
+    expect(() => g.play('c', cardOf(g, 'c', 'CANCEL').id)).toThrow();
+    passAll(g);
+    g.choose('b', 'bottom');
+    expect(g.player('b').alive).toBe(true);
   });
 });
 

@@ -66,6 +66,11 @@ export interface StackEntry {
   playerId: string;
   args: PlayArgs;
   cancelled: boolean;
+  /**
+   * A Mirror played in answer to a Hitman, copying the Angel somebody put down
+   * just before. It behaves as an Angel for the rest of its life on the table.
+   */
+  asAngel?: boolean;
 }
 
 export interface AttackEffect {
@@ -132,7 +137,7 @@ export type LogEntry =
     }
   | { t: 'drew'; playerId: string; fromBottom: boolean }
   | { t: 'hitman_drawn'; playerId: string }
-  | { t: 'angel_played'; playerId: string }
+  | { t: 'angel_played'; playerId: string; mirrored: boolean }
   | { t: 'angel_burned'; playerId: string }
   | { t: 'angel_saved'; playerId: string; placement: 'top' | 'middle' | 'bottom' }
   | { t: 'eliminated'; playerId: string }

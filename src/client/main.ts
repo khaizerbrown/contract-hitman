@@ -2,6 +2,7 @@ import { LocalMatch } from './localMatch.js';
 import { Net } from './net.js';
 import { CARD_INFO, CARD_KIND, CARD_MARK, CARD_NUMBER } from './cardInfo.js';
 import { loadSoundPreference, setSoundOn, sound, soundIsOn, wakeAudio } from './sound.js';
+import { cardFileHtml } from './cardFile.js';
 import { GameError, type MatchView } from '../engine/game.js';
 import { BALANCE } from '../config/balance.js';
 import { buildBaseDeck, hitmanCount } from '../engine/deck.js';
@@ -227,6 +228,32 @@ $('soundBtn').addEventListener('click', () => {
   setSoundOn(!soundIsOn());
   paintSoundButton();
   if (soundIsOn()) sound('play');
+});
+
+// ------------------------------------------------------------- the card file
+
+function openCardFile(): void {
+  // Counts are worth showing for the table you are actually about to sit at.
+  const players = net.room ? net.room.seats.length : Number(botSlider.value) + 1;
+  const el = $('cardFile');
+  el.innerHTML = cardFileHtml(players);
+  el.classList.remove('hidden');
+  el.scrollTop = 0;
+}
+
+function closeCardFile(): void {
+  $('cardFile').classList.add('hidden');
+  $('cardFile').innerHTML = '';
+}
+
+$('cardFileBtn').addEventListener('click', openCardFile);
+$('cardFileBtn2').addEventListener('click', openCardFile);
+document.addEventListener('click', (ev) => {
+  const el = ev.target as HTMLElement;
+  if (el?.id === 'closeFile' || el?.id === 'cardFile') closeCardFile();
+});
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape') closeCardFile();
 });
 
 $('leaveMatchBtn').addEventListener('click', () => {

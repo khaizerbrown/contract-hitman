@@ -60,6 +60,15 @@ top bar and the choice is remembered.
 
 Anyone who has asked their system to reduce motion gets none of the movement.
 
+## The card file
+
+The cards themselves carry no wording, so the rules are written down in one
+place instead: **READ THE CARD FILE**, on the opening screen and in the lobby.
+It lists every card with its mark, what it does, the corners people get wrong,
+and how many of each are in the deck for the size of table you are about to sit
+at. It is the only place the rules exist in words, so it has to stay true when
+they change.
+
 ## Deploying it
 
 The server is a plain Node app that serves the website and the game from one

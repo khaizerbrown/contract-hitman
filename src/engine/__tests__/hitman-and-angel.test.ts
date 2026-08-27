@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from '../game.js';
-import { filler, handTypes } from './helpers.js';
+import { cardOf, filler, handTypes, passAll } from './helpers.js';
 
 function twoPlayers(aHand: string[], bHand: string[], deck: string[]) {
   return Game.forTest({
@@ -82,6 +82,63 @@ describe('Drawing a Hitman', () => {
   it('shows everyone how many Hitman cards are still in the deck', () => {
     const g = twoPlayers(['PEEK'], ['PEEK'], ['PEEK', 'HITMAN', 'HITMAN', ...filler(4)]);
     expect(g.viewFor('b').hitmenRemaining).toBe(2);
+  });
+});
+
+describe('You cannot Mirror your way to a free Angel', () => {
+  function angelThenHitman() {
+    // A is saved by their Angel and puts the Hitman back on top, so B draws it
+    // on the very next turn while holding a Mirror.
+    return Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['ANGEL'] },
+        { id: 'b', name: 'B', hand: ['MIRROR'] },
+        { id: 'c', name: 'C', hand: ['PEEK'] },
+      ],
+      deck: ['HITMAN', 'HITMAN', ...filler(8)],
+    });
+  }
+
+  it('does not count an Angel firing as a card anyone played', () => {
+    const g = angelThenHitman();
+    g.draw('a');
+    g.choose('a', 'top');
+    expect(g.player('a').alive).toBe(true);
+    expect(g.state.lastPlayedType).toBeNull();
+  });
+
+  it('opens no reflex window when a Hitman is drawn, so Mirror cannot be played', () => {
+    const g = angelThenHitman();
+    g.draw('a');
+    g.choose('a', 'top');
+    const mirror = cardOf(g, 'b', 'MIRROR');
+    g.draw('b');
+    expect(g.state.pending).toBeNull();
+    expect(() => g.play('b', mirror.id)).toThrow();
+  });
+
+  it('kills the player who has no Angel, Mirror in hand or not', () => {
+    const g = angelThenHitman();
+    g.draw('a');
+    g.choose('a', 'top');
+    g.draw('b');
+    expect(g.player('b').alive).toBe(false);
+    expect(g.player('b').hand).toEqual([]);
+  });
+
+  it('never lets Mirror produce an Angel in an ordinary reflex window either', () => {
+    const g = Game.forTest({
+      players: [
+        { id: 'a', name: 'A', hand: ['PEEK'] },
+        { id: 'b', name: 'B', hand: ['MIRROR'] },
+      ],
+      deck: filler(10),
+    });
+    g.play('a', cardOf(g, 'a', 'PEEK').id);
+    g.play('b', cardOf(g, 'b', 'MIRROR').id);
+    passAll(g);
+    expect(handTypes(g, 'b')).not.toContain('ANGEL');
+    expect(handTypes(g, 'b')).toEqual([]);
   });
 });
 

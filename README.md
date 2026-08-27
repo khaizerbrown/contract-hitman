@@ -90,7 +90,10 @@ grace, response chains capped at 3, hand ceiling 20, maximum 12 players.
   draw a Hitman, and it is gone afterwards. The next Hitman kills you.
 - **Response chains** cap at 3 responses. Cards resolve last-played-first.
 - **Mirror** re-triggers the last non-quick card played. Mirroring another quick
-  card does nothing, which keeps chains bounded.
+  card does nothing, which keeps chains bounded. It can never produce an Angel:
+  an Angel firing is a reaction to a draw, not a card anyone played, so it never
+  becomes "the last card played". Drawing a Hitman opens no reflex window
+  either, so there is no moment to play a Mirror into.
 - **Burn** destroys the card it was played on plus every copy of that type in
   every hand. The deck and discard pile are untouched.
 - **Lock offers no choice.** It bans the type of the card played immediately

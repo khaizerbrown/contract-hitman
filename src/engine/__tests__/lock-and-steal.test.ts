@@ -38,6 +38,14 @@ describe('Lock', () => {
     expect(g.isLocked('SKIP')).toBe(false);
   });
 
+  it('says 3 turns the moment it is played, not 4', () => {
+    // The screen must never show the extra turn the engine carries internally.
+    const g = table({ a: ['LOCK'], b: [] });
+    playAndResolve(g, 'a', 'LOCK', { lockType: 'SKIP' });
+    expect(g.viewFor('a').locks).toEqual([{ type: 'SKIP', turnsRemaining: 3 }]);
+    expect(g.viewFor('b').locks).toEqual([{ type: 'SKIP', turnsRemaining: 3 }]);
+  });
+
   it('counts down visibly so players know when it lifts', () => {
     const g = table({ a: ['LOCK'], b: [] });
     playAndResolve(g, 'a', 'LOCK', { lockType: 'SKIP' });

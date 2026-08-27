@@ -880,7 +880,12 @@ export class Game {
       deckCount: s.deck.length,
       hitmenRemaining: this.hitmenRemaining(),
       discardCount: s.discard.length,
-      locks: s.locks.map((l) => ({ type: l.type, turnsRemaining: l.turnsRemaining })),
+      locks: s.locks.map((l) => ({
+        type: l.type,
+        // A lock carries one extra turn internally so it also covers the rest of
+        // the turn it was played on. Players only ever see the 3 they promised.
+        turnsRemaining: Math.min(l.turnsRemaining, s.balance.lockTurns),
+      })),
       stack: s.stack.map((e) => ({
         playerId: e.playerId,
         cardType: publicType(e.card.type),

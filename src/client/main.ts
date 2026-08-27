@@ -330,6 +330,10 @@ function nameOf(v: MatchView, id: string): string {
 }
 
 function render(v: MatchView): void {
+  // If the turn moved on while a choice was half-made, let go of it. Otherwise
+  // the chooser sits there and the next tap is just an error.
+  if (armedCard && !canPlay(v, armedCard.type)) armedCard = null;
+
   renderOpponents(v);
   renderDeck(v);
   renderStatus(v);
@@ -514,7 +518,8 @@ function cardHtml(v: MatchView, card: { id: string; type: CardType }, playable: 
   if (armedCard?.id === card.id) classes.push('selected');
 
   const tag = info.passive ? 'AUTOMATIC' : info.quick ? 'QUICK' : '';
-  return `<button class="${classes.join(' ')}" data-card-id="${card.id}" data-lockturns="LOCKED ${lock?.turnsRemaining ?? ''}">
+  const badge = lock ? `LOCKED ${lock.turnsRemaining}` : '';
+  return `<button class="${classes.join(' ')}" data-card-id="${card.id}" data-lockturns="${badge}">
     <div class="cname">${info.name}</div>
     <div class="cblurb">${info.blurb}</div>
     <div class="ctag">${tag}</div>

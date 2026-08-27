@@ -53,6 +53,14 @@ the Hitman density climbs the pile shifts and the counter starts to breathe.
 Hitmen, Angels and eliminations get stamped across the screen on their own
 layer, so they survive the rest of the screen redrawing underneath them.
 
+Cards move. They come off the deck and turn over as they land in a hand, leave a
+hand and settle on the discard, cross the table face down when stolen, and the
+rest of your hand slides over to make room. For that to be possible the hand is
+reconciled rather than rebuilt - each card keeps its own element for as long as
+you hold it, because a card that is destroyed and recreated cannot fly anywhere.
+A sweep on the match loop clears anything left in flight, since a browser will
+pause animations in a background tab and never finish them.
+
 Sound is synthesised in the browser - there are no audio files to download and
 it works offline. Browsers stay silent until the player has touched the page,
 so the audio only wakes on the first tap. There is a SOUND / MUTED toggle in the

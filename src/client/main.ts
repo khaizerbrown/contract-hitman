@@ -3,6 +3,7 @@ import { Net } from './net.js';
 import { CARD_INFO, CARD_KIND, CARD_MARK, CARD_NUMBER } from './cardInfo.js';
 import { loadSoundPreference, setSoundOn, sound, soundIsOn, wakeAudio } from './sound.js';
 import { cardFileHtml } from './cardFile.js';
+import { fly, measure, motionWanted, rectOf, slideFrom, sweepFlights } from './motion.js';
 import { GameError, type MatchView } from '../engine/game.js';
 import { BALANCE } from '../config/balance.js';
 import { buildBaseDeck, hitmanCount } from '../engine/deck.js';
@@ -338,6 +339,7 @@ function loop(): void {
     return;
   }
   driver.tick?.();
+  sweepFlights($('flights'));
   renderClock();
   renderIfChanged();
 }
@@ -434,15 +436,81 @@ function playBeats(v: MatchView): void {
       sound('hitman');
     } else if (e.t === 'eliminated') {
       stamp('out', nameOf(v, e.playerId), 'CONTRACT CLOSED');
+      const seat = document.querySelector(`.opp[data-target="${e.playerId}"]`);
+      if (seat && motionWanted()) {
+        seat.classList.add('falling');
+        window.setTimeout(() => seat.classList.remove('falling'), 900);
+      }
       sound('out');
     } else if (e.t === 'card_played') {
+      flyPlay(v, e.playerId, e.cardType);
       sound('play');
     } else if (e.t === 'drew') {
+      flyDraw(v, e.playerId, e.fromBottom);
       sound('draw');
+    } else if (e.t === 'stolen') {
+      flySteal(v, e.fromPlayerId, e.thiefId);
     } else if (e.t === 'burned') {
+      $('discard').classList.add('burning');
+      window.setTimeout(() => $('discard').classList.remove('burning'), 700);
       sound('burn');
+    } else if (e.t === 'mimicked') {
+      flySteal(v, e.targetPlayerId, e.playerId);
     }
   }
+}
+
+// ------------------------------------------------------------------ flights
+
+/** Where a given player sits, for a card to travel to or from. */
+function seatRect(v: MatchView, playerId: string): DOMRect | null {
+  if (playerId === meId()) return rectOf($('hand'));
+  return rectOf(document.querySelector(`.opp[data-target="${playerId}"]`));
+}
+
+/** A face for a card in flight, drawn at the size the discard pile uses. */
+function faceFor(v: MatchView, type: CardType): string {
+  return cardHtml(v, { id: 'inflight', type }, false)
+    .replace('data-card-id="inflight"', 'data-flying="1"')
+    .replace('class="card', 'class="card flyingCard');
+}
+
+/** A card comes off the deck and lands with whoever drew it. */
+function flyDraw(v: MatchView, playerId: string, fromBottom: boolean): void {
+  const from = rectOf($('deck'));
+  const to = seatRect(v, playerId);
+  if (!from || !to) return;
+  fly($('flights'), {
+    from,
+    to: shrinkToCard(to),
+    flip: true,
+    ms: fromBottom ? 520 : 400,
+    spin: playerId === meId() ? 0 : -6,
+  });
+}
+
+/** A card leaves a hand and lands on the discard, face up. */
+function flyPlay(v: MatchView, playerId: string, type: CardType): void {
+  const from = seatRect(v, playerId);
+  const to = rectOf($('discard'));
+  if (!from || !to) return;
+  fly($('flights'), { from: shrinkToCard(from), to, html: faceFor(v, type), ms: 380, spin: -3 });
+}
+
+/** A stolen card crosses the table, face down - only they know what it was. */
+function flySteal(v: MatchView, fromId: string, toId: string): void {
+  const from = seatRect(v, fromId);
+  const to = seatRect(v, toId);
+  if (!from || !to) return;
+  fly($('flights'), { from: shrinkToCard(from), to: shrinkToCard(to), ms: 460, spin: 8 });
+}
+
+/** Hands and seats are big; a card leaving one should be card-sized. */
+function shrinkToCard(r: DOMRect): DOMRect {
+  const disc = rectOf($('discard'));
+  const w = disc?.width ?? 70;
+  const h = disc?.height ?? 96;
+  return new DOMRect(r.left + r.width / 2 - w / 2, r.top + r.height / 2 - h / 2, w, h);
 }
 
 function stamp(kind: 'hit' | 'save' | 'out', line: string, sub: string): void {
@@ -875,17 +943,69 @@ function cardHtml(v: MatchView, card: { id: string; type: CardType }, playable: 
   </button>`;
 }
 
+/**
+ * The hand is reconciled, not rebuilt. Each card keeps the same element for as
+ * long as you hold it, which is what lets a card slide sideways to make room,
+ * or fly away when it is played. Rebuilding the list would destroy the very
+ * things that need to move.
+ */
 function renderHand(v: MatchView): void {
   const hand = v.you?.hand ?? [];
-  layOutFan(hand.length);
+  const el = $('hand');
+
   $('handLabel').textContent = !v.you?.alive
     ? 'YOU ARE OUT — WATCHING'
     : inReactWindow(v)
       ? 'INTERRUPT'
       : `YOUR HAND — ${hand.length} CARD${hand.length === 1 ? '' : 'S'}`;
-  $('hand').innerHTML = hand.length
-    ? hand.map((c) => cardHtml(v, c, canPlay(v, c.type))).join('')
-    : '<div class="empty">Nothing in hand.</div>';
+
+  if (hand.length === 0) {
+    el.innerHTML = '<div class="empty">Nothing in hand.</div>';
+    layOutFan(0);
+    return;
+  }
+
+  const existing = new Map<string, HTMLElement>();
+  for (const child of Array.from(el.children)) {
+    const id = child.getAttribute('data-card-id');
+    if (id) existing.set(id, child as HTMLElement);
+    else child.remove(); // the "nothing in hand" note
+  }
+
+  // Where everything sat before the hand changed.
+  const before = measure(existing.values());
+
+  layOutFan(hand.length);
+
+  const wanted = new Set(hand.map((c) => c.id));
+  for (const [id, node] of existing) {
+    if (!wanted.has(id)) {
+      node.remove();
+      before.delete(node);
+    }
+  }
+
+  const scratch = document.createElement('div');
+  for (const card of hand) {
+    const html = cardHtml(v, card, canPlay(v, card.type));
+    let node = existing.get(card.id);
+    if (!node) {
+      scratch.innerHTML = html;
+      node = scratch.firstElementChild as HTMLElement;
+      node.classList.add('dealt');
+    } else {
+      // Same element, fresh face: the card may now be locked, hot or dimmed.
+      scratch.innerHTML = html;
+      const fresh = scratch.firstElementChild as HTMLElement;
+      node.className = fresh.className;
+      node.setAttribute('data-lockturns', fresh.getAttribute('data-lockturns') ?? '');
+      node.setAttribute('title', fresh.getAttribute('title') ?? '');
+      node.innerHTML = fresh.innerHTML;
+    }
+    el.appendChild(node); // appending an existing node moves it into order
+  }
+
+  slideFrom(before);
 }
 
 /**
